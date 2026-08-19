@@ -1,7 +1,3 @@
-"""탐지(YOLOv8) + 식별(DINOv2+ArcFace) 통합 추론 파이프라인.
-이미지 한 장을 받아 제품(가방/지갑/의류/신발 등)을 탐지하고, 각 크롭을 730개 MCM SKU
-갤러리와 비교해 가장 가까운 제품명을 반환한다. 자세한 내용은 ../HANDOFF.md 참고.
-"""
 import sys
 from pathlib import Path
 
