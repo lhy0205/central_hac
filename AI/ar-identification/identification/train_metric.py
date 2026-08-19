@@ -1,9 +1,3 @@
-"""DINOv2 백본(마지막 N개 블록만 unfreeze) + ArcFace head로 SKU 분류 학습.
-목표는 96-way 분류 자체가 아니라, 학습된 임베딩 공간에서 같은 SKU끼리 가깝게 모이도록
-만드는 것 -> 실사용시엔 이 임베딩으로 최근접 검색(gallery)을 한다.
-평가는 검증 이미지(SKU당 1장, held-out)를 쿼리로 삼아 train 이미지들로 만든 gallery에
-대해 최근접 검색 top-1/top-5 정확도로 측정 (실제 배포 시나리오와 동일한 방식).
-"""
 import argparse
 import math
 from pathlib import Path
