@@ -1,18 +1,3 @@
-"""
-AR 상품 인식(탐지+식별) 파이프라인을 모바일 앱이 바로 호출할 수 있게 감싼 FastAPI 서버.
-demo/pipeline.py의 BagPipeline을 그대로 재사용함. 자세한 내용/한계는 HANDOFF.md 참고.
-
-실행:
-    pip install -r requirements.txt -r requirements_api.txt
-    python3 api_server.py
-    # 또는: uvicorn api_server:app --host 0.0.0.0 --port 8001
-
-문서(Swagger UI): 서버 실행 후 http://localhost:8001/docs
-
-엔드포인트:
-    GET  /health          헬스체크
-    POST /identify         이미지 업로드 -> 탐지된 제품별 후보 SKU 목록(JSON)
-"""
 import os
 import tempfile
 from pathlib import Path
@@ -56,29 +41,7 @@ def _save_upload_to_tempfile(file: UploadFile) -> str:
 
 @app.post("/identify")
 async def identify(file: UploadFile = File(...), topk: int = Query(default=3, ge=1, le=10)):
-    """이미지를 업로드하면 탐지된 제품별로 후보 SKU(top-k, 유사도 내림차순)를 JSON으로 반환.
 
-    응답 예시:
-        {
-          "image": "photo.jpg",
-          "detections": [
-            {
-              "class": "Handbag",
-              "confidence": 0.92,
-              "bbox": [x1, y1, x2, y2],
-              "candidates": [
-                {"productId": "...", "name": "...", "similarity": 0.61},
-                ...
-              ]
-            }
-          ]
-        }
-
-    - `candidates`가 비어 있거나 `similarity`가 낮으면(권장 임계값 0.5) "인식 실패"로 처리할 것 —
-      갤러리(730 SKU)에 없는 제품은 그럴듯하지만 틀린 답을 자신 있게 반환하는 closed-set 검색의
-      근본적 한계가 있음 (HANDOFF.md 참고).
-    - `detections`가 비어 있으면 이미지에서 제품 자체가 탐지되지 않은 것.
-    """
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
 
