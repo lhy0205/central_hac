@@ -1,6 +1,6 @@
-import * as ImagePicker from "expo-image-picker";
+﻿import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   Image,
@@ -15,6 +15,8 @@ import {
 
 import { journeyApi } from "../../src/api/client";
 import { validatePhotos, type PickedPhoto } from "../../src/components/PhotoPicker";
+import { Calendar } from "../../src/components/Calendar";
+import { TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
 import { Header } from "../../src/components/UI";
 import { colors } from "../../src/theme";
 
@@ -53,15 +55,6 @@ export default function Add() {
   const [date, setDate] = useState(isoDate(new Date()));
   const [showDates, setShowDates] = useState(false);
   const [saving, setSaving] = useState(false);
-  const dateOptions = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, index) => {
-        const d = new Date();
-        d.setDate(d.getDate() - index);
-        return isoDate(d);
-      }),
-    [],
-  );
 
   async function pickImages() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -174,20 +167,15 @@ export default function Add() {
         </Pressable>
         {showDates && (
           <View style={styles.dateMenu}>
-            {dateOptions.map((option) => (
-              <Pressable
-                key={option}
-                onPress={() => {
-                  setDate(option);
-                  setShowDates(false);
-                }}
-                style={[styles.dateOption, date === option && styles.dateOptionOn]}
-              >
-                <Text style={date === option ? styles.dateOptionTextOn : styles.dateOptionText}>
-                  {displayDate(option)}
-                </Text>
-              </Pressable>
-            ))}
+            {/* 최근 7일 목록 대신 달력에서 고른다 — 오래전 일도 기록할 수 있어야 한다. */}
+            <Calendar
+              disabledDates={(iso) => iso > isoDate(new Date())}
+              onSelect={(value) => {
+                setDate(value);
+                setShowDates(false);
+              }}
+              value={date}
+            />
           </View>
         )}
 
@@ -222,7 +210,7 @@ export default function Add() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff" },
-  content: { padding: 18, paddingBottom: 110 },
+  content: { padding: 18, paddingBottom: TAB_BAR_CLEARANCE + 24 },
   title: { fontSize: 20, color: "#444", marginBottom: 15 },
   photoRow: { gap: 7 },
   photoSlot: {
