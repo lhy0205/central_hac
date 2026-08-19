@@ -179,13 +179,17 @@ export default function Home() {
               placeholderTextColor="#8B8B8B"
               style={styles.searchInput}
             />
-            <View style={styles.micBody} />
+            <View style={styles.mic}>
+              <View style={styles.micHead} />
+              <View style={styles.micArc} />
+            </View>
           </View>
         </View>
       </View>
 
+      {/* 탭바(70)에 가운데 버튼이 26 더 솟아 있어서, 그만큼은 비워야 카드가 안 가린다. */}
       {!chromeHidden && (
-        <View style={[styles.dock, { bottom: 92 + insets.bottom }]} pointerEvents="box-none">
+        <View style={[styles.dock, { bottom: insets.bottom + 112 }]} pointerEvents="box-none">
           <View style={styles.dockInner}>
             <Text style={styles.dockLabel}>내 가방</Text>
 
@@ -393,7 +397,19 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   searchInput: { flex: 1, fontSize: 15, color: "#222", padding: 0 },
-  micBody: { width: 8, height: 14, borderRadius: 4, borderWidth: 1.7, borderColor: "#6E6E6E" },
+  // 마이크: 캡슐 머리 + 아래를 감싸는 반원. 캡슐만 두면 숫자 0처럼 보인다.
+  mic: { width: 14, height: 18, alignItems: "center", justifyContent: "flex-start" },
+  micHead: { width: 7, height: 10, borderRadius: 3.5, backgroundColor: "#6E6E6E" },
+  micArc: {
+    width: 13,
+    height: 7,
+    marginTop: 1,
+    borderWidth: 1.6,
+    borderTopWidth: 0,
+    borderColor: "#6E6E6E",
+    borderBottomLeftRadius: 7,
+    borderBottomRightRadius: 7,
+  },
 
   dock: { position: "absolute", left: 0, right: 0 },
   dockInner: {

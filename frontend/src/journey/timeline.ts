@@ -36,11 +36,44 @@ export function titleFor(item: TimelineItem) {
   );
 }
 
-// 스탬프 상세의 노트에 들어갈 본문. 사용자가 직접 쓴 기록은 메모를 그대로 보여준다.
+/* 스탬프 상세의 노트 본문.
+   기록 종류마다 본문이 될 만한 필드가 다르고, 진단처럼 메모 자체가 없는 것도 있다.
+   빈 문자열을 그대로 돌려주면 상세가 빈 상자로 보이므로 항상 읽을 거리를 만들어 준다. */
 export function noteFor(item: TimelineItem) {
-  if (item.type === "USER_EVENT") return String(item.detail.note ?? "");
-  if (item.type === "DIAGNOSIS") return String(item.detail.evidenceText ?? "");
-  if (item.type === "CARE") return String(item.detail.notes ?? item.detail.careType ?? "");
+  const detail = item.detail as Record<string, unknown>;
+
+  if (item.type === "USER_EVENT") {
+    const note = String(detail.note ?? "").trim();
+    return note || EVENT_TYPE_LABEL[String(detail.eventType)] || "기록";
+  }
+
+  if (item.type === "DIAGNOSIS") {
+    const evidence = String(detail.evidenceText ?? "").trim();
+    const scores = detail.itemScores as Record<string, number> | undefined;
+    const scoreLines = scores
+      ? Object.entries(scores).map(([label, value]) => `${label} ${value}`)
+      : [];
+    return [evidence, scoreLines.join("  ·  ")].filter(Boolean).join("\n\n") || titleFor(item);
+  }
+
+  if (item.type === "CARE") {
+    const notes = String(detail.notes ?? "").trim();
+    const careType = String(detail.careType ?? "").trim();
+    const material = String(detail.materialType ?? "").trim();
+    return (
+      [careType, material && `소재: ${material}`, notes].filter(Boolean).join("\n") ||
+      titleFor(item)
+    );
+  }
+
+  if (item.type === "RESERVATION") {
+    const store = String(detail.storeName ?? "").trim();
+    const slot = String(detail.slotDateTime ?? "")
+      .replace("T", " ")
+      .slice(0, 16);
+    return [store, slot].filter(Boolean).join("\n") || titleFor(item);
+  }
+
   return titleFor(item);
 }
 

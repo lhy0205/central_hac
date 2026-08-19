@@ -61,6 +61,10 @@ export default function Analysis() {
         <View style={st.progress}>
           <View style={[st.fill, { width: `${Math.max(66, p)}%` }]} />
         </View>
+        <View style={st.stepRow}>
+          <Text style={st.stepText}>2단계 · 분석</Text>
+          <Text style={st.stepHint}>약 20초 소요됩니다</Text>
+        </View>
         <View style={st.ring}>
           <Text style={{ fontSize: 28 }}>▱</Text>
           <Text style={{ fontSize: 20, color: colors.brown }}>{p}%</Text>
@@ -75,7 +79,7 @@ export default function Analysis() {
           {[
             ["사진 품질 확인", "4장 모두 사용 가능합니다"],
             ["부위별 상태 평가", "마모 · 코팅 · 변색 · 부자재"],
-            ["기존 사진과 비교", "이전 진단과 비교"],
+            ["기준 사진과 비교", "등록 때 찍은 사진과 대조합니다"],
           ].map(([a, b], i) => (
             <View style={st.check} key={a}>
               <Text style={{ color: i < step ? colors.gold : colors.muted, fontSize: 18 }}>
@@ -88,6 +92,7 @@ export default function Analysis() {
             </View>
           ))}
         </View>
+        <Text style={st.keepGoing}>화면을 벗어나도 분석은 계속됩니다</Text>
       </View>
     </>
   );
@@ -95,6 +100,15 @@ export default function Analysis() {
 const st = StyleSheet.create({
   screen: { flex: 1, padding: 18 },
   progress: { height: 4, backgroundColor: "#eee" },
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  stepText: { fontSize: 13, color: "#2A2A2A", fontWeight: "600" },
+  stepHint: { fontSize: 11.5, color: "#A0A0A0" },
+  keepGoing: { fontSize: 11, color: "#B0B0B0", textAlign: "center", marginBottom: 10 },
   fill: { height: "100%", backgroundColor: colors.gold },
   ring: {
     width: 130,

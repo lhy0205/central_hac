@@ -1,9 +1,11 @@
-import * as ImagePicker from "expo-image-picker";
+﻿import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
+  FlatList,
   Image,
   Linking,
   Pressable,
@@ -14,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
 import { validatePhotos, type PickedPhoto } from "../../src/components/PhotoPicker";
 import { productApi, type PassportSummary } from "../../src/api/client";
 import { colors, gradeLabel } from "../../src/theme";
@@ -42,6 +45,7 @@ export default function Diagnosis() {
   const [passports, setPassports] = useState<PassportSummary[]>([]);
   const [loadingPassport, setLoadingPassport] = useState(true);
   const [photos, setPhotos] = useState<Array<PickedPhoto | null>>([null, null, null, null]);
+  const [showIntro, setShowIntro] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
@@ -161,35 +165,40 @@ export default function Diagnosis() {
                 </Pressable>
               </View>
             ) : (
-              passports.map((item) => (
-                <Pressable
-                  key={item.id}
-                  style={styles.selectionCard}
-                  onPress={() =>
-                    router.replace({
-                      pathname: "/(tabs)/diagnosis",
-                      params: { id: String(item.id) },
-                    })
-                  }
-                >
-                  <View style={styles.selectionImageBox}>
-                    <Image source={bag} style={styles.selectionBag} />
+              /* 가방을 좌우로 넘겨 고른다 — 목록보다 사진을 크게 보여줘야 어떤 가방인지 바로 안다. */
+              <FlatList
+                data={passports}
+                keyExtractor={(item) => String(item.id)}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                renderItem={({ item }) => (
+                  <View style={styles.pickWrap}>
+                    <View style={styles.pickCard}>
+                      <Image source={bag} style={styles.pickBag} />
+                      <Text numberOfLines={2} style={styles.pickName}>
+                        {item.nickname || item.modelName}
+                      </Text>
+                      <Text style={styles.pickMeta}>
+                        {item.overallGrade ? `등급 ${gradeLabel(item.overallGrade)}` : "진단 전"} ·{" "}
+                        {item.ownershipDays}일
+                      </Text>
+                      <Pressable
+                        accessibilityLabel={`${item.nickname || item.modelName} 선택`}
+                        onPress={() =>
+                          router.replace({
+                            pathname: "/(tabs)/diagnosis",
+                            params: { id: String(item.id) },
+                          })
+                        }
+                        style={({ pressed }) => [styles.pickButton, pressed && styles.pickPressed]}
+                      >
+                        <Text style={styles.pickButtonText}>선택</Text>
+                      </Pressable>
+                    </View>
                   </View>
-                  <View style={styles.selectionCopy}>
-                    <Text numberOfLines={1} style={styles.selectionName}>
-                      {item.nickname || item.modelName}
-                    </Text>
-                    <Text numberOfLines={1} style={styles.selectionModel}>
-                      {item.modelName}
-                    </Text>
-                    <Text style={styles.selectionMeta}>
-                      {item.overallGrade ? `등급 ${gradeLabel(item.overallGrade)}` : "진단 전"} ·
-                      함께한 지 {item.ownershipDays}일
-                    </Text>
-                  </View>
-                  <Text style={styles.selectionChevron}>›</Text>
-                </Pressable>
-              ))
+                )}
+              />
             )}
           </ScrollView>
         )}
@@ -289,12 +298,112 @@ export default function Diagnosis() {
           </Text>
         </Pressable>
       </ScrollView>
+
+      {/* 처음 들어오면 이 기능이 뭘 하는지 한 번 알려준다. */}
+      {showIntro ? (
+        <View style={styles.introLayer}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowIntro(false)} />
+          <View style={styles.introSheet}>
+            <View style={styles.introGrip} />
+            <Text style={styles.introTitle}>AI 마모 진단</Text>
+            <Text style={styles.introDesc}>
+              부위별 사진 4장이면 끝!{"\n"}등록할 때 찍은 기준 사진과 비교해 등급을 매겨 드려요.
+            </Text>
+            <View style={styles.introBox}>
+              <Text style={styles.introBoxText}>모서리 · 손잡이 · 바닥면 · 금속 부자재</Text>
+              <Text style={styles.introSteps}>촬영 → 분석 → 결과</Text>
+            </View>
+            <Pressable
+              onPress={() => setShowIntro(false)}
+              style={({ pressed }) => [styles.introCta, pressed && styles.pickPressed]}
+            >
+              <Text style={styles.introCtaText}>확인했어요</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
 
+const PICK_WIDTH = Dimensions.get("window").width - 40;
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#FFFFFF" },
+
+  // 가방 고르기 카드
+  pickWrap: { width: PICK_WIDTH },
+  pickCard: {
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#D4D0C9",
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 22,
+    alignItems: "center",
+  },
+  pickBag: { width: "88%", height: 230, resizeMode: "contain" },
+  pickName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1A1A1A",
+    marginTop: 14,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  pickMeta: { fontSize: 11.5, color: "#9A9A9A", marginBottom: 20 },
+  pickButton: {
+    height: 36,
+    paddingHorizontal: 34,
+    borderRadius: 6,
+    backgroundColor: "#EFEFEF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pickPressed: { transform: [{ scale: 0.96 }] },
+  pickButtonText: { fontSize: 13, color: "#7A7A7A" },
+
+  // 기능 안내
+  introLayer: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(40,40,40,0.5)" },
+  introSheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 22,
+    paddingBottom: 30,
+  },
+  introGrip: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#DCDCDC",
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  introTitle: { fontSize: 20, fontWeight: "800", color: "#111", marginBottom: 12 },
+  introDesc: { fontSize: 14, color: "#3A3A3A", lineHeight: 23, marginBottom: 20 },
+  introBox: {
+    backgroundColor: "#F3F1EC",
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 22,
+    gap: 10,
+  },
+  introBoxText: { fontSize: 12, color: "#5C5C5C" },
+  introSteps: { fontSize: 11.5, color: "#8A6A3E", letterSpacing: 0.4 },
+  introCta: {
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "#111",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  introCtaText: { color: "#fff", fontSize: 15, fontWeight: "500" },
   headerSafe: { backgroundColor: "#FFFFFF" },
   header: {
     height: 58,
@@ -308,10 +417,16 @@ const styles = StyleSheet.create({
   back: { color: "#333333", fontSize: 31, fontWeight: "300", lineHeight: 34 },
   headerTitle: { color: "#303030", fontSize: 18, fontWeight: "500" },
   headerSpacer: { width: 16 },
-  content: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 112 },
+  // 떠 있는 탭바가 "다음 단계" 버튼을 가리지 않도록 아래를 비워 둔다.
+  content: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: TAB_BAR_CLEARANCE + 24 },
   selectionLoading: { flex: 1, alignItems: "center", justifyContent: "center" },
   selectionLoadingText: { fontSize: 11, color: "#999", marginTop: 10 },
-  selectionContent: { padding: 18, paddingBottom: 105, backgroundColor: "#fff", flexGrow: 1 },
+  selectionContent: {
+    padding: 18,
+    paddingBottom: TAB_BAR_CLEARANCE + 24,
+    backgroundColor: "#fff",
+    flexGrow: 1,
+  },
   selectionTitle: { fontSize: 20, fontWeight: "600", color: "#333", marginTop: 10 },
   selectionDescription: { fontSize: 11, color: "#999", marginTop: 7, marginBottom: 20 },
   selectionCard: {

@@ -269,6 +269,21 @@ export default function Passport() {
       {opened != null ? (
         <View style={styles.detailLayer}>
           <ScrollView contentContainerStyle={styles.content}>
+            {/* 어느 가방의 기록인지 상세에서도 그대로 보인다. */}
+            <View style={styles.hero}>
+              <Image source={bagImage} style={styles.heroImage} />
+            </View>
+            <View style={styles.nameRow}>
+              <Text style={styles.name}>{passport.nickname || passport.modelName}</Text>
+              {grade ? (
+                <Text style={[styles.gradeBadge, { backgroundColor: gradeColor(grade) }]}>
+                  등급 {grade}
+                </Text>
+              ) : null}
+            </View>
+            <Text style={styles.meta}>{passport.serialNumber}</Text>
+            <View style={styles.rule} />
+
             <View style={styles.detailHead}>
               <Stamp type={typeLabel(opened)} size={62} />
               <Animated.View

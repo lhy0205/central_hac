@@ -1,9 +1,11 @@
-﻿import { router } from "expo-router";
-import { useState } from "react";
+﻿import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -90,6 +92,15 @@ export default function Register() {
   const [baselinePhotos, setBaselinePhotos] = useState<Record<string, PickedPhoto[]>>({});
   const [nickname, setNickname] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const autoShot = useRef(false);
+
+  // 스캔 화면에 들어오면 기다리지 않고 바로 카메라를 연다.
+  useEffect(() => {
+    if (step !== "scan" || autoShot.current) return;
+    autoShot.current = true;
+    void takeSerialPhoto();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   async function redeemTransfer() {
     const normalized = code.trim().toUpperCase();
@@ -109,6 +120,38 @@ export default function Register() {
     } finally {
       setTransferLoading(false);
     }
+  }
+
+  /* 스캔 단계에 들어오면 곧바로 카메라를 띄운다. 예전에는 "카메라 촬영 / 사진 선택" 버튼을
+     먼저 보여줬는데, 화면은 스캐너처럼 생겨 놓고 카메라가 안 열려서 멈춘 것처럼 보였다. */
+  async function takeSerialPhoto() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "카메라 권한이 필요합니다",
+        "일련번호를 촬영하려면 설정에서 카메라 권한을 허용해주세요.",
+        [
+          { text: "취소", style: "cancel" },
+          { text: "설정 열기", onPress: () => Linking.openSettings() },
+        ],
+      );
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      quality: 0.85,
+      allowsEditing: false,
+    });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    await runOcr([
+      {
+        uri: asset.uri,
+        name: asset.fileName ?? `serial-${Date.now()}.jpg`,
+        type: asset.mimeType ?? "image/jpeg",
+        fileSize: asset.fileSize,
+      },
+    ]);
   }
 
   // 촬영한 라벨 사진을 OCR 서버로 보내 일련번호를 자동으로 읽어낸다. 실패해도 확인 화면으로
@@ -220,7 +263,11 @@ export default function Register() {
                 <Text style={styles.statusText}>일련번호 인식 중…</Text>
               </View>
             ) : (
-              <PhotoPicker max={1} onChange={(photos) => void runOcr(photos)} />
+              <Pressable
+                accessibilityLabel="일련번호 촬영"
+                onPress={() => void takeSerialPhoto()}
+                style={({ pressed }) => [styles.shutter, pressed && styles.shutterPressed]}
+              />
             )}
           </View>
         ) : null}
@@ -771,7 +818,23 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
     borderBottomRightRadius: 14,
   },
-  shutterRow: { position: "absolute", left: 0, right: 0, bottom: 40, paddingHorizontal: 24 },
+  shutterRow: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 40,
+    paddingHorizontal: 24,
+    alignItems: "center",
+  },
+  shutter: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "#fff",
+    borderWidth: 4,
+    borderColor: "rgba(255,255,255,0.55)",
+  },
+  shutterPressed: { transform: [{ scale: 0.92 }] },
   status: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9 },
   statusText: { color: "#fff", fontSize: 13 },
   sheet: {
@@ -783,6 +846,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 18,
+    paddingBottom: 40,
   },
   sheetQuestion: { fontSize: 12.5, color: "#333", marginBottom: 14 },
   sheetRow: { flexDirection: "row", gap: 10 },
@@ -895,6 +959,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 22,
+    paddingBottom: 46,
   },
   introGrip: {
     width: 40,
