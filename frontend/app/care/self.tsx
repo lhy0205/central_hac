@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import { diagnosisApi } from "../../src/api/client";
-import { BottomTabBar, TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
+import { BottomTabBar, useTabBarClearance } from "../../src/components/BottomTabBar";
 import { Header } from "../../src/components/UI";
 import {
   buildCareGuide,
@@ -24,6 +24,7 @@ import {
 import { colors } from "../../src/theme";
 
 export default function SelfCareGuide() {
+  const bottomPad = useTabBarClearance(20);
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [material, setMaterial] = useState<CareMaterial>("코팅 캔버스");
   const [symptoms, setSymptoms] = useState<CareSymptom[]>(["모서리 마모", "코팅 벗겨짐"]);
@@ -80,7 +81,10 @@ export default function SelfCareGuide() {
   return (
     <View style={styles.screen}>
       <Header title="셀프 케어" back hideProfile />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: bottomPad }]}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>셀프 케어 가이드</Text>
         <View style={styles.statusRow}>
           {loading ? (
@@ -197,7 +201,7 @@ export default function SelfCareGuide() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff" },
-  content: { padding: 20, paddingBottom: TAB_BAR_CLEARANCE + 20 },
+  content: { padding: 20 },
   title: { fontSize: 21, fontWeight: "800", color: "#111" },
   statusRow: { minHeight: 24, justifyContent: "center", marginTop: 6, marginBottom: 12 },
   auto: { fontSize: 11.5, color: "#B0B0B0" },

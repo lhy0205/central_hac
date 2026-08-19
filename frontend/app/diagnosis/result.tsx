@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { AppButton, Header } from "../../src/components/UI";
-import { BottomTabBar } from "../../src/components/BottomTabBar";
+import { BottomTabBar, useTabBarClearance } from "../../src/components/BottomTabBar";
 import {
   diagnosisApi,
   journeyApi,
@@ -118,6 +118,8 @@ function scoreColor(score: number) {
   return colors.gold;
 }
 export default function Result() {
+  // common.content의 100은 떠 있는 탭바보다 낮아 아래 내용이 가린다.
+  const bottomPad = useTabBarClearance(20);
   const { id, passportId } = useLocalSearchParams<{ id?: string; passportId?: string }>();
   const [list, setList] = useState<DiagnosisDetail[]>([]);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
@@ -168,7 +170,10 @@ export default function Result() {
   return (
     <View style={{ flex: 1 }}>
       <Header title="진단 결과" back />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={common.content}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[common.content, { paddingBottom: bottomPad }]}
+      >
         <Text style={common.muted}>진단 내역 선택</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {[...list].reverse().map((x, i) => (
@@ -187,8 +192,12 @@ export default function Result() {
         <View style={st.summaryCard}>
           <Text style={st.summaryLabel}>종합 등급</Text>
           <View style={st.summaryRow}>
-            <View style={[st.gradeBadge, { borderColor: gradeColor(displayGrade(item.overallGrade)) }]}>
-              <Text style={[st.gradeBadgeText, { color: gradeColor(displayGrade(item.overallGrade)) }]}>
+            <View
+              style={[st.gradeBadge, { borderColor: gradeColor(displayGrade(item.overallGrade)) }]}
+            >
+              <Text
+                style={[st.gradeBadgeText, { color: gradeColor(displayGrade(item.overallGrade)) }]}
+              >
                 {displayGrade(item.overallGrade)}
               </Text>
             </View>
@@ -197,7 +206,12 @@ export default function Result() {
                 <View style={st.compareRow}>
                   <Text style={st.compareGrade}>{displayGrade(previous.overallGrade)}</Text>
                   <Text style={st.compareArrow}>→</Text>
-                  <Text style={[st.compareGrade, { color: gradeColor(displayGrade(item.overallGrade)) }]}>
+                  <Text
+                    style={[
+                      st.compareGrade,
+                      { color: gradeColor(displayGrade(item.overallGrade)) },
+                    ]}
+                  >
                     {displayGrade(item.overallGrade)}
                   </Text>
                 </View>
@@ -225,14 +239,9 @@ export default function Result() {
           </View>
         )}
 
-        <Text style={common.section}>
-          문제 부위{problemLabel ? ` · ${problemLabel}` : ""}
-        </Text>
+        <Text style={common.section}>문제 부위{problemLabel ? ` · ${problemLabel}` : ""}</Text>
         <View style={st.photoWrap}>
-          <Image
-            source={item.imageUrls?.[0] ? { uri: item.imageUrls[0] } : bag}
-            style={st.bag}
-          />
+          <Image source={item.imageUrls?.[0] ? { uri: item.imageUrls[0] } : bag} style={st.bag} />
         </View>
 
         <Text style={common.section}>항목별 점수</Text>

@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 import { ApiError, productApi, type PassportSummary } from "../../src/api/client";
-import { TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
+import { useTabBarClearance } from "../../src/components/BottomTabBar";
 import { Header } from "../../src/components/UI";
 import { colors, gradeLabel } from "../../src/theme";
 
@@ -22,6 +22,7 @@ const CARD_WIDTH = Dimensions.get("window").width - 40;
 /* 여권 탭은 가방을 좌우로 넘겨 고르는 화면이다. 고른 가방의 "여권 보기"를 누르면
    3D 스탬프 맵(journey/passport)으로 들어간다. */
 export default function JourneyTab() {
+  const bottomPad = useTabBarClearance(20);
   const [passports, setPassports] = useState<PassportSummary[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -52,7 +53,7 @@ export default function JourneyTab() {
   return (
     <View style={styles.screen}>
       <Header />
-      <View style={styles.body}>
+      <View style={[styles.body, { paddingBottom: bottomPad }]}>
         <Text style={styles.heading}>내 가방</Text>
 
         {loadError != null ? (
@@ -131,7 +132,7 @@ export default function JourneyTab() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff" },
-  body: { flex: 1, paddingHorizontal: 20, paddingTop: 20, paddingBottom: TAB_BAR_CLEARANCE },
+  body: { flex: 1, paddingHorizontal: 20, paddingTop: 20 },
   heading: { fontSize: 16, fontWeight: "800", color: "#111", marginBottom: 14 },
   state: { paddingTop: 60, alignItems: "center", gap: 10 },
   stateText: { fontSize: 13, color: "#666", textAlign: "center" },

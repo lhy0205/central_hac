@@ -16,7 +16,7 @@ import {
 import { journeyApi } from "../../src/api/client";
 import { validatePhotos, type PickedPhoto } from "../../src/components/PhotoPicker";
 import { Calendar } from "../../src/components/Calendar";
-import { TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
+import { useTabBarClearance } from "../../src/components/BottomTabBar";
 import { Header } from "../../src/components/UI";
 import { colors } from "../../src/theme";
 
@@ -45,6 +45,7 @@ function displayDate(value: string) {
 }
 
 export default function Add() {
+  const bottomPad = useTabBarClearance(24);
   const { id, type: initialType } = useLocalSearchParams<{ id: string; type?: string }>();
   const [type, setType] = useState(
     TYPES.includes(initialType as (typeof TYPES)[number]) ? String(initialType) : "순간 기록",
@@ -111,7 +112,10 @@ export default function Add() {
   return (
     <View style={styles.screen}>
       <Header />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: bottomPad }]}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>기록 추가</Text>
         <ScrollView
           horizontal
@@ -210,7 +214,7 @@ export default function Add() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff" },
-  content: { padding: 18, paddingBottom: TAB_BAR_CLEARANCE + 24 },
+  content: { padding: 18 },
   title: { fontSize: 20, color: "#444", marginBottom: 15 },
   photoRow: { gap: 7 },
   photoSlot: {

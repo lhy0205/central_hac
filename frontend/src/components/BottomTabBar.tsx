@@ -20,8 +20,18 @@ export const TABS: { key: TabKey; label: string; path: string; Icon: typeof Home
   { key: "profile", label: "프로필", path: "/(tabs)/profile", Icon: ProfileIcon },
 ];
 
+const BAR_HEIGHT = 70;
+// 가운데 진단 버튼은 알약 위로 이만큼 솟아 있다(styles.centerItem.marginTop).
+const CENTER_RISE = 26;
+// 알약이 화면 바닥에서 띄워지는 최소 높이.
+const BAR_LIFT = 10;
+
 // 떠 있는 알약 모양이라 화면 콘텐츠가 이만큼은 아래를 비워둬야 가리지 않는다.
-export const TAB_BAR_CLEARANCE = 96;
+// 내비게이션 바(insets.bottom)를 못 세면 기기마다 딱 그만큼씩 가려지므로 훅으로 계산한다.
+export function useTabBarClearance(extra = 0) {
+  const insets = useSafeAreaInsets();
+  return Math.max(insets.bottom, BAR_LIFT) + BAR_HEIGHT + CENTER_RISE + extra;
+}
 
 export function TabBarView({
   active,
@@ -51,7 +61,7 @@ export function TabBarView({
       style={[
         styles.bar,
         {
-          bottom: Math.max(insets.bottom, 10),
+          bottom: Math.max(insets.bottom, BAR_LIFT),
           opacity: shift.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
           transform: [{ translateY }],
         },
@@ -100,8 +110,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 10,
     right: 10,
-    height: 70,
-    borderRadius: 35,
+    height: BAR_HEIGHT,
+    borderRadius: BAR_HEIGHT / 2,
     backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
@@ -127,7 +137,7 @@ const styles = StyleSheet.create({
     width: 74,
     height: 74,
     borderRadius: 37,
-    marginTop: -26,
+    marginTop: -CENTER_RISE,
     backgroundColor: "#0C0C0C",
     shadowColor: "#000",
     shadowOpacity: 0.34,

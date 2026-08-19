@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { diagnosisApi, productApi, transferApi, type PassportDetail } from "../../src/api/client";
-import { BottomTabBar, TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
+import { BottomTabBar, useTabBarClearance } from "../../src/components/BottomTabBar";
 import { Header } from "../../src/components/UI";
 import { colors, gradeColor, gradeLabel } from "../../src/theme";
 
@@ -17,6 +17,7 @@ function daysSince(value: string) {
 }
 
 export default function TransferPassport() {
+  const bottomPad = useTabBarClearance(20);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [passport, setPassport] = useState<PassportDetail | null>(null);
   const [grade, setGrade] = useState<string | null>(null);
@@ -104,7 +105,7 @@ export default function TransferPassport() {
         </View>
       ) : (
         /* 2) 확인이 끝나면 승계 코드를 보여준다 */
-        <View style={styles.content}>
+        <View style={[styles.content, { paddingBottom: bottomPad }]}>
           <Text style={styles.title}>여권 승계</Text>
           <View style={styles.rule} />
           <View style={styles.heroWrap}>
@@ -146,7 +147,7 @@ export default function TransferPassport() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
-  content: { flex: 1, paddingHorizontal: 22, paddingTop: 22, paddingBottom: TAB_BAR_CLEARANCE },
+  content: { flex: 1, paddingHorizontal: 22, paddingTop: 22 },
   title: { fontSize: 20, fontWeight: "800", color: "#111" },
   rule: { height: 1, backgroundColor: "#E8E8E8", marginTop: 14, marginBottom: 16 },
 

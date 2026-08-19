@@ -19,7 +19,7 @@ import {
   type CareRequestItemType,
   type StoreSummary,
 } from "../../src/api/client";
-import { BottomTabBar, TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
+import { BottomTabBar, useTabBarClearance } from "../../src/components/BottomTabBar";
 import { Calendar } from "../../src/components/Calendar";
 import { Header } from "../../src/components/UI";
 import { colors } from "../../src/theme";
@@ -40,6 +40,7 @@ function todayIso() {
 }
 
 export default function CareBooking() {
+  const bottomPad = useTabBarClearance(20);
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [stores, setStores] = useState<StoreSummary[]>([]);
   const [storesLoading, setStoresLoading] = useState(true);
@@ -148,7 +149,10 @@ export default function CareBooking() {
   return (
     <View style={styles.screen}>
       <Header title="공식 케어 예약" back hideProfile />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: bottomPad }]}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>공식 케어 예약</Text>
         <View style={styles.rule} />
 
@@ -282,7 +286,7 @@ export default function CareBooking() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff" },
-  content: { padding: 20, paddingBottom: TAB_BAR_CLEARANCE + 20 },
+  content: { padding: 20 },
   title: { fontSize: 21, fontWeight: "800", color: "#111" },
   rule: { height: 1, backgroundColor: "#DEDEDE", marginTop: 18, marginBottom: 4 },
   section: { fontSize: 14, fontWeight: "700", color: "#1A1A1A", marginTop: 24, marginBottom: 12 },

@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
+import { useTabBarClearance } from "../../src/components/BottomTabBar";
 import { validatePhotos, type PickedPhoto } from "../../src/components/PhotoPicker";
 import { productApi, type PassportSummary } from "../../src/api/client";
 import { colors, gradeLabel } from "../../src/theme";
@@ -40,6 +40,7 @@ function DiagnosisHeader({ onBack }: { onBack: () => void }) {
 }
 
 export default function Diagnosis() {
+  const bottomPad = useTabBarClearance(24);
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [passport, setPassport] = useState<PassportSummary | null>(null);
   const [passports, setPassports] = useState<PassportSummary[]>([]);
@@ -146,7 +147,9 @@ export default function Diagnosis() {
             <Text style={styles.selectionLoadingText}>가방을 불러오고 있습니다</Text>
           </View>
         ) : (
-          <ScrollView contentContainerStyle={styles.selectionContent}>
+          <ScrollView
+            contentContainerStyle={[styles.selectionContent, { paddingBottom: bottomPad }]}
+          >
             <Text style={styles.selectionTitle}>진단할 가방을 선택해주세요</Text>
             <Text style={styles.selectionDescription}>
               등록된 가방 중 상태를 확인할 제품을 눌러주세요.
@@ -210,7 +213,10 @@ export default function Diagnosis() {
     <View style={styles.screen}>
       <DiagnosisHeader onBack={goBack} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.content, { paddingBottom: bottomPad }]}
+      >
         <View style={styles.progressTrack}>
           <View style={styles.progressValue} />
         </View>
@@ -375,7 +381,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 22,
-    paddingBottom: TAB_BAR_CLEARANCE + 20,
   },
   introGrip: {
     width: 40,
@@ -418,12 +423,11 @@ const styles = StyleSheet.create({
   headerTitle: { color: "#303030", fontSize: 18, fontWeight: "500" },
   headerSpacer: { width: 16 },
   // 떠 있는 탭바가 "다음 단계" 버튼을 가리지 않도록 아래를 비워 둔다.
-  content: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: TAB_BAR_CLEARANCE + 24 },
+  content: { paddingHorizontal: 16, paddingTop: 18 },
   selectionLoading: { flex: 1, alignItems: "center", justifyContent: "center" },
   selectionLoadingText: { fontSize: 11, color: "#999", marginTop: 10 },
   selectionContent: {
     padding: 18,
-    paddingBottom: TAB_BAR_CLEARANCE + 24,
     backgroundColor: "#fff",
     flexGrow: 1,
   },

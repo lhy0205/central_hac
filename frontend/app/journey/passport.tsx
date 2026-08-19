@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   ApiError,
@@ -20,7 +21,7 @@ import {
   type PassportDetail,
   type TimelineItem,
 } from "../../src/api/client";
-import { BottomTabBar, TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
+import { BottomTabBar, useTabBarClearance } from "../../src/components/BottomTabBar";
 import { Stamp } from "../../src/components/Stamp";
 import { Header } from "../../src/components/UI";
 import { noteFor, stampDate, titleFor, typeLabel } from "../../src/journey/timeline";
@@ -44,6 +45,8 @@ function nodePos(index: number, width: number) {
 export default function Passport() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const bottomPad = useTabBarClearance(20);
   const [passport, setPassport] = useState<PassportDetail | null>(null);
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [grade, setGrade] = useState<string | null>(null);
@@ -173,7 +176,7 @@ export default function Passport() {
     <View style={styles.screen}>
       <Header title="여권" back />
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad }]}>
         <View style={styles.hero}>
           <Image source={bagImage} style={styles.heroImage} />
         </View>
@@ -276,7 +279,12 @@ export default function Passport() {
 
       {opened != null ? (
         <View style={styles.detailLayer}>
-          <ScrollView contentContainerStyle={styles.content}>
+          <ScrollView
+            contentContainerStyle={[
+              styles.content,
+              { paddingTop: insets.top + 16, paddingBottom: bottomPad },
+            ]}
+          >
             {/* 어느 가방의 기록인지 상세에서도 그대로 보인다. */}
             <View style={styles.hero}>
               <Image source={bagImage} style={styles.heroImage} />
@@ -346,7 +354,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff" },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   errorText: { fontSize: 13, color: "#666" },
-  content: { padding: 20, paddingBottom: TAB_BAR_CLEARANCE + 20 },
+  content: { padding: 20 },
 
   hero: {
     borderWidth: 1,
@@ -410,7 +418,7 @@ const styles = StyleSheet.create({
   pressed: { transform: [{ scale: 0.98 }] },
 
   flying: { position: "absolute", zIndex: 30 },
-  detailLayer: { ...StyleSheet.absoluteFillObject, backgroundColor: "#fff", top: 58 },
+  detailLayer: { ...StyleSheet.absoluteFillObject, backgroundColor: "#fff" },
   detailHead: { flexDirection: "row", alignItems: "center", gap: 11 },
   titlePill: {
     flex: 1,

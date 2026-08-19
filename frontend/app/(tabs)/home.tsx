@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Video from "react-native-video";
 
 import { ApiError, productApi, type PassportSummary } from "../../src/api/client";
+import { useTabBarClearance } from "../../src/components/BottomTabBar";
 import { NotificationBubble } from "../../src/components/NotificationBubble";
 import { useChrome } from "../../src/context/ChromeContext";
 import { AD_SLIDES } from "../../src/home/adFeed";
@@ -40,6 +41,7 @@ function formatDate(value?: string) {
 
 export default function Home() {
   const insets = useSafeAreaInsets();
+  const dockBottom = useTabBarClearance(14);
   const { setTabBarHidden } = useChrome();
   const [bags, setBags] = useState<BagCard[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -187,9 +189,9 @@ export default function Home() {
         </View>
       </View>
 
-      {/* 탭바(70)에 가운데 버튼이 26 더 솟아 있어서, 그만큼은 비워야 카드가 안 가린다. */}
+      {/* 탭바가 실제로 차지하는 높이(내비게이션 바 포함)만큼 띄워야 카드가 안 가린다. */}
       {!chromeHidden && (
-        <View style={[styles.dock, { bottom: insets.bottom + 112 }]} pointerEvents="box-none">
+        <View style={[styles.dock, { bottom: dockBottom }]} pointerEvents="box-none">
           <View style={styles.dockInner}>
             <Text style={styles.dockLabel}>내 가방</Text>
 
@@ -439,7 +441,7 @@ const styles = StyleSheet.create({
     padding: 9,
     flexDirection: "row",
     gap: 11,
-    minHeight: 184,
+    minHeight: 150,
   },
   thumb: { width: "40%", borderRadius: 6, backgroundColor: "#FBF9F6", padding: 4 },
   thumbImage: { width: "100%", height: "100%", resizeMode: "contain" },
@@ -449,7 +451,7 @@ const styles = StyleSheet.create({
   gradeDot: { width: 7, height: 7, borderRadius: 4 },
   gradeText: { fontSize: 12, color: "#2A2A2A" },
   meta: { fontSize: 11.5, color: "#4A4A4A", marginBottom: 4 },
-  actions: { flexDirection: "row", gap: 7, marginTop: "auto" },
+  actions: { flexDirection: "row", gap: 7, marginTop: 12 },
   btn: { flex: 1, height: 31, borderRadius: 6, alignItems: "center", justifyContent: "center" },
   btnPressed: { transform: [{ scale: 0.96 }] },
   btnPrimary: { backgroundColor: "#111" },

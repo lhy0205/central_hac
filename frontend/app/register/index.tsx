@@ -13,9 +13,9 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { productApi, storeApi, transferApi, type StoreSummary } from "../../src/api/client";
-import { TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
 import { Calendar } from "../../src/components/Calendar";
 import { PackingAnimation } from "../../src/components/PackingAnimation";
 import { PhotoPicker, validatePhotos, type PickedPhoto } from "../../src/components/PhotoPicker";
@@ -64,6 +64,9 @@ const PROGRESS: Partial<Record<Step, number>> = {
 };
 
 export default function Register() {
+  const insets = useSafeAreaInsets();
+  // 등록 화면엔 탭바가 없다. 시트·본문 하단이 내비게이션 바에 물리지 않게만 띄운다.
+  const bottomPad = insets.bottom + 24;
   const [step, setStep] = useState<Step>("choose");
   const [intro, setIntro] = useState(true);
 
@@ -208,7 +211,7 @@ export default function Register() {
         </View>
 
         {step === "confirm" ? (
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: bottomPad }]}>
             <Text style={styles.sheetQuestion}>현재 스캔한 제품의 일련번호가 맞나요?</Text>
             <TextInput
               accessibilityLabel="인식된 일련번호"
@@ -225,13 +228,13 @@ export default function Register() {
                   setSerialNumber(scannedSerial);
                   setStep("model");
                 }}
-                style={({ pressed }) => [styles.outline, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.outline, styles.half, pressed && styles.pressed]}
               >
                 <Text style={styles.outlineText}>맞습니다</Text>
               </Pressable>
               <Pressable
                 onPress={() => setStep("manual")}
-                style={({ pressed }) => [styles.filled, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.filled, styles.half, pressed && styles.pressed]}
               >
                 <Text style={styles.filledText}>아닙니다</Text>
               </Pressable>
@@ -240,7 +243,7 @@ export default function Register() {
         ) : null}
 
         {step === "manual" ? (
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: bottomPad }]}>
             <Text style={styles.sheetQuestion}>일련번호를 입력해주세요</Text>
             <Text style={styles.label}>제품 일련번호</Text>
             <TextInput
@@ -275,7 +278,7 @@ export default function Register() {
   return (
     <View style={styles.screen}>
       <Header title="제품 등록" back hideProfile />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 8 }]}>
         <Text style={styles.title}>제품 등록</Text>
         <View style={styles.rule} />
 
@@ -586,7 +589,7 @@ export default function Register() {
       {intro && step === "choose" ? (
         <View style={styles.introLayer}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setIntro(false)} />
-          <View style={styles.introSheet}>
+          <View style={[styles.introSheet, { paddingBottom: bottomPad }]}>
             <View style={styles.introGrip} />
             <Text style={styles.introTitle}>제품 등록</Text>
             <Text style={styles.introDesc}>
@@ -630,7 +633,7 @@ function StepNav({ onBack, onNext }: { onBack: () => void; onNext: () => void })
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff" },
-  content: { padding: 20, paddingBottom: TAB_BAR_CLEARANCE + 20 },
+  content: { padding: 20 },
   title: { fontSize: 21, fontWeight: "800", color: "#111", marginBottom: 20 },
   rule: { height: 1, backgroundColor: "#DEDEDE", marginBottom: 26 },
   question: { fontSize: 15, fontWeight: "700", color: "#1A1A1A", marginBottom: 9 },
@@ -781,10 +784,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 18,
-    paddingBottom: 40,
   },
   sheetQuestion: { fontSize: 12.5, color: "#333", marginBottom: 14 },
-  sheetRow: { flexDirection: "row", gap: 10, marginTop: 4 },
+  sheetRow: { flexDirection: "row", gap: 10, marginTop: 10 },
 
   catalogBox: {
     borderWidth: 1,
@@ -894,7 +896,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 22,
-    paddingBottom: TAB_BAR_CLEARANCE + 20,
   },
   introGrip: {
     width: 40,

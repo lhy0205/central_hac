@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { accountApi, type AccountInfo } from "../../src/api/client";
-import { TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
+import { useTabBarClearance } from "../../src/components/BottomTabBar";
 import { Header } from "../../src/components/UI";
 import { useAuth } from "../../src/context/AuthContext";
 
@@ -14,6 +14,7 @@ const ACCOUNT_ROWS = [
 ];
 
 export default function Profile() {
+  const bottomPad = useTabBarClearance(20);
   const auth = useAuth();
   const [account, setAccount] = useState<AccountInfo | null>(null);
 
@@ -47,7 +48,7 @@ export default function Profile() {
   return (
     <View style={styles.screen}>
       <Header />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad }]}>
         <Text style={styles.title}>프로필</Text>
 
         <View style={styles.card}>
@@ -95,7 +96,7 @@ export default function Profile() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#F7F7F7" },
-  content: { padding: 16, paddingBottom: TAB_BAR_CLEARANCE + 20 },
+  content: { padding: 16 },
   title: { fontSize: 17, fontWeight: "700", color: "#1A1A1A", marginBottom: 14 },
   card: {
     flexDirection: "row",
