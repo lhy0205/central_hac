@@ -1,70 +1,56 @@
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
+  Dimensions,
+  FlatList,
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ViewToken,
 } from "react-native";
-import { Header } from "../../src/components/UI";
-import { productApi, ApiError, type PassportSummary } from "../../src/api/client";
-import { common, colors, gradeLabel } from "../../src/theme";
-const bag = require("../../assets/mcm-bag.png");
-const REDIAGNOSE_THRESHOLD_DAYS = 90;
-function EmptyPassportArtwork() {
-  return (
-    <View style={st.emptyArt}>
-      <View style={st.backPaper}>
-        <Text style={st.paperText}>
-          MCM{`\n`}CARE{`\n`}· · ·
-        </Text>
-      </View>
-      <View style={st.openBook}>
-        <View style={st.bookSpine} />
-        <View style={st.bookPage}>
-          <Text style={st.bookLogo}>MCM</Text>
-          <Text style={st.bookCaption}>NOMAD PASSPORT</Text>
-          <View style={st.bookPhoto}>
-            <Text style={st.bookPhotoMark}>◇</Text>
-          </View>
-          <View style={st.bookLine} />
-          <View style={st.bookLineShort} />
-        </View>
-        <View style={st.bookPage}>
-          <Text style={st.journeyTitle}>CARE JOURNEY</Text>
-          <View style={st.miniStamps}>
-            {[0, 1, 2].map((index) => (
-              <View key={index} style={st.miniStamp}>
-                <Text style={st.miniStampText}>M</Text>
-              </View>
-            ))}
-          </View>
-          <View style={st.route} />
-          <View style={st.routeDots}>
-            {[0, 1, 2, 3].map((index) => (
-              <View key={index} style={st.routeDot} />
-            ))}
-          </View>
-        </View>
-      </View>
-      <View style={st.tag}>
-        <Text style={st.tagText}>MCM</Text>
-      </View>
-      <View style={st.coin}>
-        <Text style={st.coinText}>M</Text>
-      </View>
-    </View>
-  );
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Video from "react-native-video";
+
+import { ApiError, productApi, type PassportSummary } from "../../src/api/client";
+import { NotificationBubble } from "../../src/components/NotificationBubble";
+import { useChrome } from "../../src/context/ChromeContext";
+import { AD_SLIDES } from "../../src/home/adFeed";
+import { colors, gradeColor, gradeLabel } from "../../src/theme";
+
+const bagImage = require("../../assets/mcm-bag.png");
+const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get("window");
+const CARD_WIDTH = SCREEN_W - 48;
+
+/* 카드에 구매일·구입 장소를 보여줘야 하는데 목록 응답(PassportSummary)에는 그 두 필드가 없다.
+   가방 수가 많지 않아 상세를 병렬로 한 번 더 받아 합친다. 목록 응답에 필드가 생기면
+   이 추가 요청은 지워도 된다. */
+type BagCard = PassportSummary & { purchaseDate?: string; purchasePlace?: string | null };
+
+function formatDate(value?: string) {
+  if (!value) return "-";
+  return value.slice(0, 10).replaceAll("-", ". ");
 }
+
 export default function Home() {
-  const [bags, setBags] = useState<PassportSummary[] | null>(null);
+  const insets = useSafeAreaInsets();
+  const { setTabBarHidden } = useChrome();
+  const [bags, setBags] = useState<BagCard[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [chromeHidden, setChromeHidden] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [cardIndex, setCardIndex] = useState(0);
+  const [bubbleOpen, setBubbleOpen] = useState(false);
+  const hiddenRef = useRef(false);
+
   useFocusEffect(
     useCallback(() => {
       const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -74,19 +60,33 @@ export default function Home() {
       return () => subscription.remove();
     }, []),
   );
+
+  // 화면을 벗어날 때 숨김이 남아 있으면 다른 탭에서 탭바가 사라진 채로 보인다.
+  useFocusEffect(
+    useCallback(() => {
+      return () => setTabBarHidden(false);
+    }, [setTabBarHidden]),
+  );
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
       setLoading(true);
-      // 실패를 빈 배열로 삼키면 "아직 등록된 제품이 없습니다" 빈 상태가 떠서, 통신 오류를
-      // 사용자 데이터에 대한 단정으로 바꿔 보여주게 된다. 오류와 빈 목록을 구분한다.
       productApi
         .list()
-        .then((res) => {
-          if (active) {
-            setBags(res.content);
-            setLoadError(null);
-          }
+        .then(async (res) => {
+          const details = await Promise.all(
+            res.content.map((item) => productApi.detail(String(item.id)).catch(() => null)),
+          );
+          if (!active) return;
+          setBags(
+            res.content.map((item, index) => ({
+              ...item,
+              purchaseDate: details[index]?.purchaseDate,
+              purchasePlace: details[index]?.purchasePlace,
+            })),
+          );
+          setLoadError(null);
         })
         .catch((err) => {
           if (active)
@@ -100,362 +100,361 @@ export default function Home() {
       };
     }, [reloadKey]),
   );
-  if (loading)
-    return (
-      <>
-        <Header />
-        <View style={[common.content, { alignItems: "center", paddingTop: 60 }]}>
-          <ActivityIndicator />
-        </View>
-      </>
-    );
-  if (loadError != null)
-    return (
-      <>
-        <Header />
-        <View style={[common.content, { alignItems: "center", paddingTop: 60, gap: 12 }]}>
-          <Text style={{ color: "#666", fontSize: 13, textAlign: "center" }}>{loadError}</Text>
-          <Pressable onPress={() => setReloadKey((k) => k + 1)}>
-            <Text style={{ color: colors.brown, fontSize: 13, textDecorationLine: "underline" }}>
-              다시 시도
-            </Text>
-          </Pressable>
-        </View>
-      </>
-    );
-  if (!bags || bags.length === 0)
-    return (
-      <View style={st.emptyScreen}>
-        <Header />
-        <ScrollView contentContainerStyle={st.emptyContent}>
-          <Text style={st.emptyHeading}>내 가방</Text>
-          <View style={st.emptyCard}>
-            <EmptyPassportArtwork />
-            <Text style={st.emptyTitle}>아직 등록된 제품이 없습니다</Text>
-            <Text style={st.emptyDescription}>
-              가방 안쪽 황동 플레이트의 고유번호로{`\n`}첫 여권을 시작할 수 있습니다
-            </Text>
-            <Pressable style={st.registerButton} onPress={() => router.push("/register")}>
-              <Text style={st.registerText}>＋ 제품 등록하기</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </View>
-    );
-  const hero = bags?.[0];
-  const rest = bags?.slice(1) ?? [];
-  const needsAttention = (bags ?? []).filter(
-    (b) => b.lastDiagnosedAt === null || daysSince(b.lastDiagnosedAt) >= REDIAGNOSE_THRESHOLD_DAYS,
-  ).length;
+
+  // 배경 광고를 조금이라도 내리면 아이콘바와 내 가방이 통째로 사라지고,
+  // 맨 위까지 되돌아오면 다시 나타난다.
+  const onFeedScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = event.nativeEvent.contentOffset.y;
+    const next = y > 24 ? true : y <= 2 ? false : hiddenRef.current;
+    if (next !== hiddenRef.current) {
+      hiddenRef.current = next;
+      setChromeHidden(next);
+      setTabBarHidden(next);
+    }
+  };
+
+  const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const first = viewableItems[0];
+    if (first?.index != null) setActiveSlide(first.index);
+  }).current;
+
+  const cards = bags ?? [];
+
   return (
-    <>
-      <Header />
-      <ScrollView contentContainerStyle={common.content}>
-        {needsAttention > 0 && (
-          <Pressable style={st.alert} onPress={() => router.push("/bags")}>
-            <Text>● 재진단 권장 {needsAttention}건</Text>
-            <Text>›</Text>
-          </Pressable>
-        )}
-        {hero ? (
-          <Pressable
-            style={st.hero}
-            onPress={() =>
-              router.push({ pathname: "/bags/detail", params: { id: String(hero.id) } })
-            }
-          >
-            <Image source={bag} style={common.bag} />
-            <View style={{ flex: 1 }}>
-              <Text style={st.grade}>
-                {hero.overallGrade ? `등급 ${gradeLabel(hero.overallGrade)}` : "진단 전"}
-              </Text>
-              <Text>{hero.nickname || hero.modelName}</Text>
-              <Text style={common.muted}>함께한 지 {hero.ownershipDays}일</Text>
+    <View style={styles.screen}>
+      <FlatList
+        data={AD_SLIDES}
+        keyExtractor={(item) => item.key}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        onScroll={onFeedScroll}
+        scrollEventThrottle={16}
+        onViewableItemsChanged={onViewable}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
+        renderItem={({ item, index }) => (
+          <View style={[styles.slide, { height: SCREEN_H }]}>
+            <Video
+              // v6는 번들 에셋도 source.uri로 받는다.
+              source={{ uri: item.source }}
+              style={StyleSheet.absoluteFillObject}
+              resizeMode="cover"
+              repeat
+              muted
+              paused={index !== activeSlide}
+            />
+            <View style={styles.scrimTop} pointerEvents="none" />
+            <View style={styles.scrimBottom} pointerEvents="none" />
+            <View style={[styles.adTag, { bottom: chromeHidden ? 150 : 330 }]} pointerEvents="none">
+              <Text style={styles.adBadge}>{item.badge}</Text>
+              <Text style={styles.adTitle}>{item.title}</Text>
+              <Text style={styles.adCaption}>{item.caption}</Text>
             </View>
-          </Pressable>
-        ) : (
-          <Pressable
-            style={[common.card, { alignItems: "center" }]}
-            onPress={() => router.push("/register")}
-          >
-            <Text>등록된 제품이 없습니다. 첫 제품을 등록해보세요.</Text>
-          </Pressable>
-        )}
-        <Pressable style={st.arCard} onPress={() => router.push("/ar/intro")}>
-          <Text style={st.arIcon}>◈</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={st.arTitle}>AR로 가방 히스토리 보기</Text>
-            <Text style={common.muted}>카메라로 가방을 비추면 히스토리를 바로 보여드려요</Text>
           </View>
-          <Text>›</Text>
-        </Pressable>
-        <View style={st.careCard}>
-          <Text style={st.careTitle}>지금 케어를 권장합니다</Text>
-          <Text style={common.muted}>
-            가방 상태에 맞는 셀프 케어를 확인하거나 공식 매장을 예약해보세요.
+        )}
+      />
+
+      {/* 헤더와 검색은 영상 위에 떠 있다 — 영상이 화면 맨 위까지 올라온다. */}
+      <View style={[styles.top, { paddingTop: insets.top }]} pointerEvents="box-none">
+        <View style={styles.header}>
+          <Text style={styles.logo}>
+            MCM<Text style={styles.logoCare}>Care</Text>
           </Text>
-          <View style={st.careActions}>
-            <Pressable
-              style={st.careOutline}
-              onPress={() =>
-                router.push({ pathname: "/care/self", params: hero ? { id: String(hero.id) } : {} })
-              }
-            >
-              <Text>셀프 케어</Text>
-            </Pressable>
-            <Pressable
-              style={st.carePrimary}
-              onPress={() =>
-                router.push({
-                  pathname: "/care/booking",
-                  params: hero ? { id: String(hero.id) } : {},
-                })
-              }
-            >
-              <Text style={{ color: "#fff" }}>공식 예약</Text>
-            </Pressable>
-          </View>
-        </View>
-        <View style={st.head}>
-          <Text style={common.section}>내 가방 전체</Text>
-          <Text style={common.muted}>{bags?.length ?? 0}개</Text>
-        </View>
-        {rest.map((b) => (
           <Pressable
-            style={st.bagRow}
-            key={b.id}
-            onPress={() => router.push({ pathname: "/bags/detail", params: { id: String(b.id) } })}
+            accessibilityLabel="알림"
+            hitSlop={12}
+            onPress={() => setBubbleOpen(true)}
+            style={({ pressed }) => [styles.bell, pressed && styles.bellPressed]}
           >
-            <Image source={bag} style={st.small} />
-            <View style={{ flex: 1 }}>
-              <Text>{b.nickname || b.modelName}</Text>
-              <Text style={common.muted}>
-                {b.overallGrade ? `등급 ${gradeLabel(b.overallGrade)}` : "진단 전"} ·{" "}
-                {b.ownershipDays}일
-              </Text>
-            </View>
+            <View style={styles.bellBody} />
+            <View style={styles.bellClapper} />
           </Pressable>
-        ))}
-        <Pressable style={st.addRow} onPress={() => router.push("/register")}>
-          <View style={st.addIconBox}>
-            <Text style={st.addIcon}>＋</Text>
+        </View>
+        <View style={styles.searchWrap}>
+          <View style={styles.searchBar}>
+            <View style={styles.searchLens} />
+            <View style={styles.searchHandle} />
+            <TextInput
+              accessibilityLabel="제품 검색"
+              placeholder="Search"
+              placeholderTextColor="#8B8B8B"
+              style={styles.searchInput}
+            />
+            <View style={styles.micBody} />
           </View>
-          <Text style={st.addText}>제품 등록</Text>
-        </Pressable>
-      </ScrollView>
-    </>
+        </View>
+      </View>
+
+      {!chromeHidden && (
+        <View style={[styles.dock, { bottom: 92 + insets.bottom }]} pointerEvents="box-none">
+          <View style={styles.dockInner}>
+            <Text style={styles.dockLabel}>내 가방</Text>
+
+            {loading ? (
+              <View style={styles.dockState}>
+                <ActivityIndicator />
+              </View>
+            ) : loadError != null ? (
+              <View style={styles.dockState}>
+                <Text style={styles.dockError}>{loadError}</Text>
+                <Pressable onPress={() => setReloadKey((key) => key + 1)}>
+                  <Text style={styles.retry}>다시 시도</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <FlatList
+                data={[...cards, null]}
+                keyExtractor={(item, index) => (item ? String(item.id) : `add-${index}`)}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={(event) =>
+                  setCardIndex(
+                    Math.round(
+                      event.nativeEvent.contentOffset.x /
+                        Math.max(1, event.nativeEvent.layoutMeasurement.width),
+                    ),
+                  )
+                }
+                renderItem={({ item }) =>
+                  item ? <BagCardView bag={item} /> : <RegisterCardView />
+                }
+              />
+            )}
+
+            {cards.length > 0 && (
+              <View style={styles.dots}>
+                {[...cards, null].map((_, index) => (
+                  <View key={index} style={[styles.dot, index === cardIndex && styles.dotActive]} />
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      )}
+
+      <NotificationBubble
+        open={bubbleOpen}
+        onClose={() => setBubbleOpen(false)}
+        topOffset={insets.top + 46}
+      />
+    </View>
   );
 }
-function daysSince(iso: string) {
-  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+
+function BagCardView({ bag }: { bag: BagCard }) {
+  const color = gradeColor(bag.overallGrade);
+  return (
+    <View style={styles.cardWrap}>
+      {/* 테두리 색이 곧 AI 진단 등급이다. */}
+      <View style={[styles.card, { borderColor: color }]}>
+        <View style={styles.thumb}>
+          <Image source={bagImage} style={styles.thumbImage} />
+        </View>
+        <View style={styles.info}>
+          <Text numberOfLines={2} style={styles.bagName}>
+            {bag.nickname || bag.modelName}
+          </Text>
+          <View style={styles.gradeRow}>
+            <View style={[styles.gradeDot, { backgroundColor: color }]} />
+            <Text style={styles.gradeText}>
+              {bag.overallGrade ? `등급 ${gradeLabel(bag.overallGrade)}` : "진단 전"} ·{" "}
+              {bag.ownershipDays}일
+            </Text>
+          </View>
+          <Text numberOfLines={1} style={styles.meta}>
+            구매일 : {formatDate(bag.purchaseDate)}
+          </Text>
+          <Text numberOfLines={1} style={styles.meta}>
+            구입 장소 : {bag.purchasePlace || "-"}
+          </Text>
+          <View style={styles.actions}>
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/care/booking", params: { id: String(bag.id) } })
+              }
+              style={({ pressed }) => [styles.btn, styles.btnPrimary, pressed && styles.btnPressed]}
+            >
+              <Text style={styles.btnPrimaryText}>공식 예약</Text>
+            </Pressable>
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/care/self", params: { id: String(bag.id) } })
+              }
+              style={({ pressed }) => [styles.btn, styles.btnGhost, pressed && styles.btnPressed]}
+            >
+              <Text style={styles.btnGhostText}>셀프 케어</Text>
+            </Pressable>
+          </View>
+          <Pressable
+            onPress={() =>
+              router.push({ pathname: "/bags/detail", params: { id: String(bag.id) } })
+            }
+          >
+            <Text style={styles.diagLink}>최근 진단 결과 보기 ›</Text>
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
 }
-const st = StyleSheet.create({
-  alert: {
-    height: 40,
-    backgroundColor: "#f2f2f2",
-    paddingHorizontal: 12,
+
+function RegisterCardView() {
+  return (
+    <View style={styles.cardWrap}>
+      <Pressable
+        accessibilityLabel="제품 등록"
+        onPress={() => router.push("/register")}
+        style={({ pressed }) => [styles.card, styles.addCard, pressed && styles.addPressed]}
+      >
+        <Text style={styles.plus}>＋</Text>
+        <View style={styles.addRule} />
+        <Text style={styles.addLabel}>제품 등록</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#000" },
+  slide: { width: "100%", backgroundColor: "#111" },
+  scrimTop: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 220,
+    backgroundColor: "rgba(0,0,0,0.34)",
+  },
+  scrimBottom: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 300,
+    backgroundColor: "rgba(0,0,0,0.34)",
+  },
+  adTag: { position: "absolute", left: 16 },
+  adBadge: {
+    alignSelf: "flex-start",
+    color: "#fff",
+    fontSize: 10,
+    letterSpacing: 1.4,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.6)",
+    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    marginBottom: 8,
+  },
+  adTitle: { color: "#fff", fontSize: 19, fontWeight: "600" },
+  adCaption: { color: "rgba(255,255,255,0.82)", fontSize: 12, marginTop: 3 },
+
+  top: { position: "absolute", left: 0, right: 0, top: 0 },
+  header: {
+    height: 52,
+    paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  hero: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
-  arCard: {
+  logo: { fontSize: 19, fontWeight: "800", color: "#fff", letterSpacing: -0.4 },
+  logoCare: { fontSize: 15, fontWeight: "400", color: "rgba(255,255,255,0.72)" },
+  bell: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
+  bellPressed: { backgroundColor: "rgba(255,255,255,0.2)" },
+  bellBody: {
+    width: 16,
+    height: 15,
+    borderWidth: 1.7,
+    borderColor: "#fff",
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomWidth: 0,
+  },
+  bellClapper: { width: 6, height: 1.7, backgroundColor: "#fff", marginTop: 2, borderRadius: 1 },
+
+  searchWrap: { paddingHorizontal: 14, paddingTop: 10 },
+  searchBar: {
+    height: 44,
+    borderRadius: 26,
+    backgroundColor: "rgba(255,255,255,0.92)",
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    backgroundColor: "#F6EFE1",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    paddingHorizontal: 16,
+    gap: 9,
   },
-  arIcon: { fontSize: 22, color: colors.gold },
-  arTitle: { fontWeight: "700", marginBottom: 2 },
-  careCard: { padding: 14, borderRadius: 10, backgroundColor: colors.soft, gap: 8 },
-  careTitle: { fontSize: 15, fontWeight: "600" },
-  careActions: { flexDirection: "row", gap: 8, marginTop: 2 },
-  careOutline: {
-    flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderColor: "#BDBDBD",
-    borderRadius: 5,
-    alignItems: "center",
-    justifyContent: "center",
+  searchLens: { width: 13, height: 13, borderRadius: 7, borderWidth: 1.8, borderColor: "#6E6E6E" },
+  searchHandle: {
+    position: "absolute",
+    left: 26,
+    top: 25,
+    width: 6,
+    height: 1.8,
+    backgroundColor: "#6E6E6E",
+    transform: [{ rotate: "45deg" }],
+  },
+  searchInput: { flex: 1, fontSize: 15, color: "#222", padding: 0 },
+  micBody: { width: 8, height: 14, borderRadius: 4, borderWidth: 1.7, borderColor: "#6E6E6E" },
+
+  dock: { position: "absolute", left: 0, right: 0 },
+  dockInner: {
+    marginHorizontal: 12,
     backgroundColor: "#fff",
-  },
-  carePrimary: {
-    flex: 1,
-    height: 40,
-    borderRadius: 5,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.dark,
-  },
-  grade: { backgroundColor: "#eee", alignSelf: "flex-start", padding: 4 },
-  head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  bagRow: {
-    height: 68,
-    borderBottomWidth: 1,
-    borderColor: colors.line,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  small: { width: 58, height: 45, resizeMode: "contain" },
-  emptyScreen: { flex: 1, backgroundColor: "#fff" },
-  emptyContent: { flexGrow: 1, paddingHorizontal: 18, paddingTop: 17, paddingBottom: 20 },
-  emptyHeading: { fontSize: 16, color: "#444", marginBottom: 10 },
-  emptyCard: {
-    flex: 1,
-    minHeight: 520,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#D4D0C9",
-    borderRadius: 12,
-    alignItems: "center",
-    paddingHorizontal: 22,
-    paddingTop: 28,
-    paddingBottom: 28,
-  },
-  emptyTitle: { fontSize: 13, color: "#3F3F3F", marginTop: 22 },
-  emptyDescription: {
-    fontSize: 10,
-    color: "#AAA",
-    lineHeight: 17,
-    textAlign: "center",
-    marginTop: 38,
-  },
-  registerButton: {
-    width: 160,
-    height: 48,
-    borderRadius: 5,
-    backgroundColor: colors.dark,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 17,
-  },
-  registerText: { fontSize: 12, color: "#FFF" },
-  emptyArt: {
-    width: 230,
-    height: 205,
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backPaper: {
-    position: "absolute",
-    left: 25,
-    top: 12,
-    width: 80,
-    height: 118,
-    backgroundColor: "#EDE0C9",
-    borderWidth: 1,
-    borderColor: "#D3BE9F",
-    transform: [{ rotate: "-12deg" }],
-    padding: 12,
-  },
-  paperText: { fontSize: 8, lineHeight: 16, color: "#8D7655" },
-  openBook: {
-    width: 175,
-    height: 145,
-    backgroundColor: "#F7EEDC",
-    borderWidth: 2,
-    borderColor: "#CDBB9E",
-    borderRadius: 3,
-    flexDirection: "row",
-    shadowColor: "#5A4630",
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 10,
+    shadowColor: "#000",
     shadowOpacity: 0.18,
-    shadowRadius: 7,
-    elevation: 5,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
   },
-  bookSpine: {
-    position: "absolute",
-    left: 85,
-    top: 0,
-    bottom: 0,
-    width: 5,
-    backgroundColor: "#BDA379",
-    zIndex: 3,
-  },
-  bookPage: { width: 85, padding: 9, alignItems: "center" },
-  bookLogo: { fontSize: 12, fontWeight: "700", color: "#765B39", marginTop: 3 },
-  bookCaption: { fontSize: 5, letterSpacing: 1, color: "#987B55", marginTop: 2 },
-  bookPhoto: {
-    width: 42,
-    height: 47,
-    borderWidth: 1,
-    borderColor: "#B9A27E",
-    marginTop: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  bookPhotoMark: { fontSize: 20, color: "#B2966E" },
-  bookLine: { height: 1, width: 47, backgroundColor: "#C8B18D", marginTop: 8 },
-  bookLineShort: { height: 1, width: 32, backgroundColor: "#C8B18D", marginTop: 5 },
-  journeyTitle: { fontSize: 7, fontWeight: "700", color: "#755C3A", marginTop: 8 },
-  miniStamps: { flexDirection: "row", gap: 5, marginTop: 15 },
-  miniStamp: {
-    width: 18,
-    height: 18,
-    borderWidth: 1,
-    borderColor: "#AA8E65",
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  miniStampText: { fontSize: 5, color: "#8C704B" },
-  route: {
-    width: 58,
-    height: 32,
-    borderBottomWidth: 1,
-    borderLeftWidth: 1,
-    borderColor: "#BFA77E",
-    borderBottomLeftRadius: 24,
-    marginTop: 10,
-    transform: [{ rotate: "-8deg" }],
-  },
-  routeDots: { position: "absolute", bottom: 15, flexDirection: "row", gap: 7 },
-  routeDot: { width: 4, height: 4, borderRadius: 2, borderWidth: 1, borderColor: "#9A7A51" },
-  tag: {
-    position: "absolute",
-    left: 12,
-    bottom: 7,
-    width: 42,
-    height: 54,
-    backgroundColor: "#8A542B",
+  dockLabel: { fontSize: 13, fontWeight: "700", color: "#111", paddingBottom: 9, paddingLeft: 2 },
+  dockState: { minHeight: 120, alignItems: "center", justifyContent: "center", gap: 10 },
+  dockError: { fontSize: 12, color: "#666", textAlign: "center" },
+  retry: { fontSize: 13, color: colors.brown, textDecorationLine: "underline" },
+
+  cardWrap: { width: CARD_WIDTH },
+  card: {
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#693A1D",
-    borderRadius: 4,
-    transform: [{ rotate: "9deg" }],
-    alignItems: "center",
-    justifyContent: "center",
+    borderColor: colors.line,
+    backgroundColor: "#fff",
+    padding: 9,
+    flexDirection: "row",
+    gap: 11,
+    minHeight: 184,
   },
-  tagText: { fontSize: 7, color: "#E8C99D" },
-  coin: {
-    position: "absolute",
-    right: 8,
-    bottom: 11,
-    width: 43,
-    height: 43,
-    borderRadius: 22,
-    backgroundColor: "#B18A50",
-    borderWidth: 3,
-    borderColor: "#7C5A34",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  coinText: { fontSize: 13, color: "#F5E2BC", fontWeight: "700" },
-  addRow: { height: 56, flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4 },
-  addIconBox: {
-    width: 58,
-    height: 45,
-    borderRadius: 6,
-    borderWidth: 1,
+  thumb: { width: "40%", borderRadius: 6, backgroundColor: "#FBF9F6", padding: 4 },
+  thumbImage: { width: "100%", height: "100%", resizeMode: "contain" },
+  info: { flex: 1, paddingTop: 4 },
+  bagName: { fontSize: 13, fontWeight: "700", color: "#151515", marginBottom: 6 },
+  gradeRow: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 6 },
+  gradeDot: { width: 7, height: 7, borderRadius: 4 },
+  gradeText: { fontSize: 12, color: "#2A2A2A" },
+  meta: { fontSize: 11.5, color: "#4A4A4A", marginBottom: 4 },
+  actions: { flexDirection: "row", gap: 7, marginTop: "auto" },
+  btn: { flex: 1, height: 31, borderRadius: 6, alignItems: "center", justifyContent: "center" },
+  btnPressed: { transform: [{ scale: 0.96 }] },
+  btnPrimary: { backgroundColor: "#111" },
+  btnPrimaryText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  btnGhost: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#CFCFCF" },
+  btnGhostText: { color: "#222", fontSize: 12 },
+  diagLink: { fontSize: 11, color: "#9A9A9A", textAlign: "right", paddingTop: 6 },
+
+  addCard: {
     borderStyle: "dashed",
-    borderColor: "#BDBDBD",
+    borderColor: "#D6D6D6",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
   },
-  addIcon: { fontSize: 16, color: "#999" },
-  addText: { color: "#555" },
+  addPressed: { backgroundColor: "#FCFAF7" },
+  plus: { fontSize: 34, color: "#B5B5B5", marginBottom: 22 },
+  addRule: { width: "78%", height: 1, backgroundColor: "#E3E3E3", marginBottom: 11 },
+  addLabel: { fontSize: 12.5, color: "#8A8A8A" },
+
+  dots: { flexDirection: "row", gap: 5, justifyContent: "center", paddingTop: 9 },
+  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#D8D8D8" },
+  dotActive: { width: 15, borderRadius: 3, backgroundColor: colors.brown },
 });

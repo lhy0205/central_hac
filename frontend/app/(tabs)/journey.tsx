@@ -2,25 +2,36 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
+  FlatList,
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { productApi, ApiError, type PassportSummary } from "../../src/api/client";
+
+import { ApiError, productApi, type PassportSummary } from "../../src/api/client";
+import { TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
 import { Header } from "../../src/components/UI";
-import { colors, common, gradeLabel } from "../../src/theme";
-const bag = require("../../assets/mcm-bag.png");
+import { colors, gradeLabel } from "../../src/theme";
+
+const bagImage = require("../../assets/mcm-bag.png");
+const CARD_WIDTH = Dimensions.get("window").width - 40;
+
+/* 여권 탭은 가방을 좌우로 넘겨 고르는 화면이다. 고른 가방의 "여권 보기"를 누르면
+   3D 스탬프 맵(journey/passport)으로 들어간다. */
 export default function JourneyTab() {
   const [passports, setPassports] = useState<PassportSummary[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [index, setIndex] = useState(0);
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      /* 실패를 빈 배열로 삼키면 빈 상태 UI가 떠서 통신 오류를 "제품 없음"으로 단정해 보여준다. */ productApi
+      /* 실패를 빈 배열로 삼키면 빈 상태 UI가 떠서 통신 오류를 "제품 없음"으로 단정해 보여준다. */
+      productApi
         .list(0, 100)
         .then((page) => {
           if (active) {
@@ -37,39 +48,26 @@ export default function JourneyTab() {
       };
     }, [reloadKey]),
   );
+
   return (
     <View style={styles.screen}>
       <Header />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.headingRow}>
-          <View>
-            <Text style={styles.title}>여권</Text>
-            <Text style={styles.subtitle}>가방을 선택하면 케어 여정을 볼 수 있습니다</Text>
-          </View>
-          {passports && <Text style={styles.count}>{passports.length}개</Text>}
-        </View>
+      <View style={styles.body}>
+        <Text style={styles.heading}>내 가방</Text>
+
         {loadError != null ? (
-          <View style={styles.center}>
-            <Text style={{ color: "#666", fontSize: 13, textAlign: "center" }}>{loadError}</Text>
-            <Pressable onPress={() => setReloadKey((k) => k + 1)}>
-              <Text
-                style={{
-                  color: colors.brown,
-                  fontSize: 13,
-                  marginTop: 12,
-                  textDecorationLine: "underline",
-                }}
-              >
-                다시 시도
-              </Text>
+          <View style={styles.state}>
+            <Text style={styles.stateText}>{loadError}</Text>
+            <Pressable onPress={() => setReloadKey((key) => key + 1)}>
+              <Text style={styles.retry}>다시 시도</Text>
             </Pressable>
           </View>
-        ) : passports === null ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={colors.brown} />
+        ) : passports == null ? (
+          <View style={styles.state}>
+            <ActivityIndicator />
           </View>
         ) : passports.length === 0 ? (
-          <View style={styles.empty}>
+          <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>등록된 가방이 없습니다</Text>
             <Text style={styles.emptyText}>제품을 등록하면 가방별 여권이 만들어집니다.</Text>
             <Pressable style={styles.register} onPress={() => router.push("/register")}>
@@ -77,95 +75,123 @@ export default function JourneyTab() {
             </Pressable>
           </View>
         ) : (
-          passports.map((item) => (
-            <Pressable
-              key={item.id}
-              style={styles.card}
-              onPress={() =>
-                router.push({ pathname: "/journey/passport", params: { id: String(item.id) } })
+          <>
+            <FlatList
+              data={passports}
+              keyExtractor={(item) => String(item.id)}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(event) =>
+                setIndex(
+                  Math.round(
+                    event.nativeEvent.contentOffset.x /
+                      Math.max(1, event.nativeEvent.layoutMeasurement.width),
+                  ),
+                )
               }
-            >
-              <View style={styles.imageBox}>
-                <Image source={bag} style={styles.bag} />
+              renderItem={({ item }) => (
+                <View style={styles.cardWrap}>
+                  <View style={styles.card}>
+                    <Image source={bagImage} style={styles.cardImage} />
+                    <Text style={styles.cardName}>{item.nickname || item.modelName}</Text>
+                    <Text style={styles.cardMeta}>
+                      {item.overallGrade ? `등급 ${gradeLabel(item.overallGrade)}` : "진단 전"} ·{" "}
+                      {item.ownershipDays}일
+                    </Text>
+                    <Pressable
+                      accessibilityLabel="여권 보기"
+                      onPress={() =>
+                        router.push({
+                          pathname: "/journey/passport",
+                          params: { id: String(item.id) },
+                        })
+                      }
+                      style={({ pressed }) => [styles.open, pressed && styles.openPressed]}
+                    >
+                      <Text style={styles.openText}>여권 보기</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+            />
+            {passports.length > 1 ? (
+              <View style={styles.dots}>
+                {passports.map((_, dot) => (
+                  <View key={dot} style={[styles.dot, dot === index && styles.dotActive]} />
+                ))}
               </View>
-              <View style={styles.copy}>
-                <Text style={styles.name}>{item.nickname || item.modelName}</Text>
-                <Text style={styles.model}>{item.modelName}</Text>
-                <Text style={styles.meta}>
-                  {item.overallGrade ? `등급 ${gradeLabel(item.overallGrade)}` : "진단 전"} · 함께한
-                  지 {item.ownershipDays}일
-                </Text>
-              </View>
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
-          ))
+            ) : null}
+          </>
         )}
-      </ScrollView>
+      </View>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff" },
-  content: { padding: 18, paddingBottom: 100, backgroundColor: "#fff", flexGrow: 1 },
-  headingRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    marginBottom: 18,
-  },
-  title: { fontSize: 20, fontWeight: "600", color: "#333" },
-  subtitle: { fontSize: 10, color: "#999", marginTop: 6 },
-  count: { fontSize: 11, color: colors.brown },
-  center: { flex: 1, minHeight: 400, alignItems: "center", justifyContent: "center" },
-  empty: {
-    minHeight: 420,
+  body: { flex: 1, paddingHorizontal: 20, paddingTop: 20, paddingBottom: TAB_BAR_CLEARANCE },
+  heading: { fontSize: 16, fontWeight: "800", color: "#111", marginBottom: 14 },
+  state: { paddingTop: 60, alignItems: "center", gap: 10 },
+  stateText: { fontSize: 13, color: "#666", textAlign: "center" },
+  retry: { fontSize: 13, color: colors.brown, textDecorationLine: "underline" },
+
+  cardWrap: { width: CARD_WIDTH },
+  card: {
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "#d7d0c5",
+    borderColor: "#D4D0C9",
     borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 22,
+    alignItems: "center",
+  },
+  cardImage: { width: "88%", height: 250, resizeMode: "contain" },
+  cardName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1A1A1A",
+    marginTop: 14,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  cardMeta: { fontSize: 11.5, color: "#9A9A9A", marginBottom: 20 },
+  open: {
+    height: 36,
+    paddingHorizontal: 26,
+    borderRadius: 6,
+    backgroundColor: "#EFEFEF",
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
   },
-  emptyTitle: { fontSize: 14, color: "#444" },
-  emptyText: { fontSize: 10, color: "#999", marginTop: 8 },
-  register: {
-    height: 44,
-    paddingHorizontal: 24,
-    backgroundColor: colors.dark,
-    borderRadius: 5,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 20,
-  },
-  registerText: { fontSize: 11, color: "#fff" },
-  card: {
-    minHeight: 112,
+  openPressed: { backgroundColor: "#E4DDD0", transform: [{ scale: 0.96 }] },
+  openText: { fontSize: 13, color: "#7A7A7A" },
+
+  dots: { flexDirection: "row", gap: 5, justifyContent: "center", paddingTop: 14 },
+  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: "#D8D8D8" },
+  dotActive: { width: 15, borderRadius: 3, backgroundColor: colors.brown },
+
+  emptyCard: {
     borderWidth: 1,
-    borderColor: "#e6e1d9",
-    borderRadius: 9,
-    backgroundColor: "#fff",
-    padding: 12,
-    marginBottom: 11,
-    flexDirection: "row",
+    borderStyle: "dashed",
+    borderColor: "#D4D0C9",
+    borderRadius: 12,
+    padding: 28,
     alignItems: "center",
-    shadowColor: "#6f5534",
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 1,
+    gap: 10,
   },
-  imageBox: {
-    width: 92,
-    height: 82,
-    borderRadius: 7,
-    backgroundColor: "#f8f5f0",
+  emptyTitle: { fontSize: 14, color: "#3F3F3F" },
+  emptyText: { fontSize: 11.5, color: "#AAA", textAlign: "center" },
+  register: {
+    marginTop: 12,
+    width: 160,
+    height: 48,
+    borderRadius: 5,
+    backgroundColor: colors.dark,
     alignItems: "center",
     justifyContent: "center",
   },
-  bag: { width: 88, height: 70, resizeMode: "contain" },
-  copy: { flex: 1, paddingHorizontal: 13 },
-  name: { fontSize: 14, color: "#333", marginBottom: 5 },
-  model: { fontSize: 9, color: "#aaa", marginBottom: 6 },
-  meta: { fontSize: 10, color: "#777" },
-  chevron: { fontSize: 22, color: "#a7957d" },
+  registerText: { fontSize: 12, color: "#fff" },
 });

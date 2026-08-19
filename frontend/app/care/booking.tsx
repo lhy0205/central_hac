@@ -1,8 +1,10 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
+  FlatList,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +19,8 @@ import {
   type CareRequestItemType,
   type StoreSummary,
 } from "../../src/api/client";
+import { BottomTabBar, TAB_BAR_CLEARANCE } from "../../src/components/BottomTabBar";
+import { Calendar } from "../../src/components/Calendar";
 import { Header } from "../../src/components/UI";
 import { colors } from "../../src/theme";
 
@@ -27,30 +31,21 @@ const REQUEST_OPTIONS: { label: string; value: CareRequestItemType }[] = [
   { label: "코팅 벗겨짐 복원", value: "OTHER" },
   { label: "전체 클리닝", value: "LEATHER_CLEANING" },
 ];
-const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
 
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
-function dateKey(year: number, month: number, day: number) {
-  return `${year}-${pad(month + 1)}-${pad(day)}`;
-}
-function isPast(year: number, month: number, day: number, today: Date) {
-  const cell = new Date(year, month, day);
-  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  return cell < start;
+const STORE_CARD_WIDTH = Dimensions.get("window").width * 0.78;
+
+function todayIso() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 export default function CareBooking() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const [now] = useState(new Date());
-  const [month, setMonth] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
-
   const [stores, setStores] = useState<StoreSummary[]>([]);
   const [storesLoading, setStoresLoading] = useState(true);
   const [storeId, setStoreId] = useState<number | null>(null);
 
-  const [selectedDate, setSelectedDate] = useState<number | null>(null);
+  const [date, setDate] = useState<string | null>(null);
   const [slots, setSlots] = useState<string[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -75,7 +70,7 @@ export default function CareBooking() {
   }, []);
 
   useEffect(() => {
-    if (storeId === null || selectedDate === null) {
+    if (storeId === null || date === null) {
       setSlots([]);
       setSelectedSlot(null);
       return;
@@ -84,42 +79,28 @@ export default function CareBooking() {
     setSlotsLoading(true);
     setSelectedSlot(null);
     reservationApi
-      .availableSlots(String(storeId), dateKey(month.getFullYear(), month.getMonth(), selectedDate))
+      .availableSlots(String(storeId), date)
       .then((result) => active && setSlots(result))
       .catch(() => active && setSlots([]))
       .finally(() => active && setSlotsLoading(false));
     return () => {
       active = false;
     };
-  }, [storeId, selectedDate, month]);
+  }, [storeId, date]);
 
   function refreshSlots() {
-    if (storeId === null || selectedDate === null) return;
+    if (storeId === null || date === null) return;
     setSelectedSlot(null);
     reservationApi
-      .availableSlots(String(storeId), dateKey(month.getFullYear(), month.getMonth(), selectedDate))
+      .availableSlots(String(storeId), date)
       .then(setSlots)
       .catch(() => setSlots([]));
   }
 
-  const cells = useMemo(() => {
-    const first = month.getDay();
-    const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-    return [...Array(first).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)] as Array<
-      number | null
-    >;
-  }, [month]);
-
-  const canGoPrevMonth =
-    month.getFullYear() > now.getFullYear() || month.getMonth() > now.getMonth();
-
-  function move(delta: number) {
-    if (delta < 0 && !canGoPrevMonth) return;
-    setMonth(new Date(month.getFullYear(), month.getMonth() + delta, 1));
-    setSelectedDate(null);
-  }
   function toggle(value: CareRequestItemType) {
-    setRequests((x) => (x.includes(value) ? x.filter((v) => v !== value) : [...x, value]));
+    setRequests((current) =>
+      current.includes(value) ? current.filter((item) => item !== value) : [...current, value],
+    );
   }
 
   async function submit() {
@@ -130,7 +111,7 @@ export default function CareBooking() {
       return Alert.alert("예약 확인", "요청 항목을 한 개 이상 선택해주세요.");
     setSubmitting(true);
     try {
-      const store = stores.find((s) => s.id === storeId);
+      const store = stores.find((item) => item.id === storeId);
       const reservation = await reservationApi.create(id, {
         storeId,
         slotDateTime: selectedSlot,
@@ -154,245 +135,231 @@ export default function CareBooking() {
         "예약 실패",
         error instanceof ApiError ? error.message : "예약 신청에 실패했습니다.",
       );
-      // 다른 사용자가 그 사이 같은 슬롯을 먼저 예약했을 수 있음(백엔드 409 SLOT_ALREADY_BOOKED) — 목록을 새로 받아온다.
+      // 다른 사용자가 그 사이 같은 슬롯을 먼저 예약했을 수 있음(백엔드 409) — 목록을 새로 받아온다.
       if (error instanceof ApiError && error.status === 409) refreshSlots();
     } finally {
       setSubmitting(false);
     }
   }
 
+  const morning = slots.filter((slot) => Number(slot.slice(11, 13)) < 12);
+  const afternoon = slots.filter((slot) => Number(slot.slice(11, 13)) >= 12);
+
   return (
     <View style={styles.screen}>
-      <Header />
+      <Header title="공식 케어 예약" back hideProfile />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>공식 케어 예약</Text>
-        <Text style={styles.caption}>
-          매장 진단 이력은 자가진단보다 높은 신뢰도로 여권에 기록됩니다
-        </Text>
         <View style={styles.rule} />
 
         <Text style={styles.section}>1. 매장 선택</Text>
+        {/* 지도 SDK가 아직 없고 매장 응답에 좌표 필드도 없다 — 자리만 잡아두고 목록으로 고른다. */}
         <View style={styles.map}>
           <Text style={styles.mapText}>지도</Text>
         </View>
-        <View style={styles.storeBox}>
-          <Text style={styles.storeLabel}>근처 매장</Text>
-          {storesLoading ? (
-            <ActivityIndicator color={colors.dark} />
-          ) : stores.length === 0 ? (
-            <Text style={styles.small}>예약 가능한 매장이 없습니다.</Text>
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8 }}
-            >
-              {stores.map((s) => (
-                <Pressable
-                  key={s.id}
-                  onPress={() => {
-                    setStoreId(s.id);
-                    setSelectedDate(null);
-                  }}
-                  style={[styles.storeCard, storeId === s.id && styles.storeOn]}
-                >
-                  <View style={styles.storeHead}>
-                    <Text style={styles.storeName}>{s.name}</Text>
-                    <View style={[styles.radio, storeId === s.id && styles.radioOn]} />
-                  </View>
-                  <Text style={styles.small}>{s.address}</Text>
-                  <Text style={styles.small}>
-                    영업시간 {s.businessHoursStart?.slice(0, 5)}–{s.businessHoursEnd?.slice(0, 5)}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          )}
-        </View>
+        <Text style={styles.storeLabel}>근처 매장</Text>
+        {storesLoading ? (
+          <ActivityIndicator style={styles.loading} />
+        ) : stores.length === 0 ? (
+          <Text style={styles.empty}>예약 가능한 매장이 없습니다.</Text>
+        ) : (
+          <FlatList
+            data={stores}
+            keyExtractor={(item) => String(item.id)}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={STORE_CARD_WIDTH + 10}
+            decelerationRate="fast"
+            contentContainerStyle={styles.storeRail}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => setStoreId(item.id)}
+                style={[styles.storeCard, storeId === item.id && styles.storeCardOn]}
+              >
+                <View style={styles.storeHead}>
+                  <Text style={styles.storeName}>{item.name}</Text>
+                  <View style={[styles.storeDot, storeId === item.id && styles.storeDotOn]} />
+                </View>
+                <Text style={styles.storeSmall}>{item.address}</Text>
+                <Text style={styles.storeSmall}>
+                  {item.businessHoursStart?.slice(0, 5)} - {item.businessHoursEnd?.slice(0, 5)}
+                </Text>
+                <Text style={styles.storeSmall}>{item.slotLengthMinutes}분 단위 예약</Text>
+              </Pressable>
+            )}
+          />
+        )}
 
         <Text style={styles.section}>2. 날짜와 시간</Text>
-        <View style={styles.monthHead}>
-          <Pressable onPress={() => move(-1)} disabled={!canGoPrevMonth}>
-            <Text style={[styles.arrow, !canGoPrevMonth && styles.arrowDisabled]}>‹</Text>
-          </Pressable>
-          <Text style={styles.month}>
-            {month.getFullYear()}. {pad(month.getMonth() + 1)}
-          </Text>
-          <Pressable onPress={() => move(1)}>
-            <Text style={styles.arrow}>›</Text>
-          </Pressable>
-        </View>
-        <View style={styles.week}>
-          {WEEK.map((d, i) => (
-            <Text key={d} style={[styles.weekText, i === 0 && { color: "#C86666" }]}>
-              {d}
-            </Text>
-          ))}
-        </View>
-        <View style={styles.calendar}>
-          {cells.map((day, index) => {
-            if (day === null) return <View key={`blank-${index}`} style={styles.day} />;
-            const past = isPast(month.getFullYear(), month.getMonth(), day, now);
+        <Calendar disabledDates={(iso) => iso < todayIso()} onSelect={setDate} value={date} />
+
+        {date == null ? (
+          <Text style={styles.empty}>날짜를 먼저 선택해주세요.</Text>
+        ) : slotsLoading ? (
+          <ActivityIndicator style={styles.loading} />
+        ) : slots.length === 0 ? (
+          <Text style={styles.empty}>선택한 날짜에 예약 가능한 시간이 없습니다.</Text>
+        ) : (
+          <>
+            {morning.length > 0 ? (
+              <>
+                <Text style={styles.timeLabel}>오전</Text>
+                <View style={styles.slots}>
+                  {morning.map((slot) => (
+                    <Pressable
+                      key={slot}
+                      onPress={() => setSelectedSlot(slot)}
+                      style={[styles.slot, selectedSlot === slot && styles.slotOn]}
+                    >
+                      <Text style={[styles.slotText, selectedSlot === slot && styles.slotTextOn]}>
+                        {slot.slice(11, 16)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            ) : null}
+            {afternoon.length > 0 ? (
+              <>
+                <Text style={styles.timeLabel}>오후</Text>
+                <View style={styles.slots}>
+                  {afternoon.map((slot) => (
+                    <Pressable
+                      key={slot}
+                      onPress={() => setSelectedSlot(slot)}
+                      style={[styles.slot, selectedSlot === slot && styles.slotOn]}
+                    >
+                      <Text
+                        style={[
+                          styles.slotText,
+                          styles.slotPm,
+                          selectedSlot === slot && styles.slotTextOn,
+                        ]}
+                      >
+                        {slot.slice(11, 16)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            ) : null}
+          </>
+        )}
+
+        <Text style={styles.section}>3. 요청 항목</Text>
+        <View style={styles.items}>
+          {REQUEST_OPTIONS.map((option) => {
+            const on = requests.includes(option.value);
             return (
               <Pressable
-                key={day}
-                disabled={past}
-                onPress={() => setSelectedDate(day)}
-                style={[styles.day, selectedDate === day && styles.dayOn]}
+                key={option.value}
+                onPress={() => toggle(option.value)}
+                style={styles.item}
               >
-                <Text
-                  style={[
-                    styles.dayText,
-                    index % 7 === 0 && { color: "#C86666" },
-                    past && styles.dayTextDisabled,
-                    selectedDate === day && styles.dayTextOn,
-                  ]}
-                >
-                  {day}
-                </Text>
+                <View style={[styles.checkbox, on && styles.checkboxOn]}>
+                  {on ? <Text style={styles.check}>✓</Text> : null}
+                </View>
+                <Text style={styles.itemLabel}>{option.label}</Text>
               </Pressable>
             );
           })}
         </View>
 
-        <Text style={styles.timeLabel}>시간</Text>
-        {selectedDate === null ? (
-          <Text style={styles.small}>날짜를 먼저 선택해주세요.</Text>
-        ) : slotsLoading ? (
-          <ActivityIndicator color={colors.dark} />
-        ) : slots.length === 0 ? (
-          <Text style={styles.small}>선택한 날짜에 예약 가능한 시간이 없습니다.</Text>
-        ) : (
-          <View style={styles.timeGrid}>
-            {slots.map((slot) => (
-              <Pressable
-                key={slot}
-                onPress={() => setSelectedSlot(slot)}
-                style={[styles.time, selectedSlot === slot && styles.timeOn]}
-              >
-                <Text style={[styles.timeText, selectedSlot === slot && styles.timeTextOn]}>
-                  {slot.slice(11, 16)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-        <Text style={styles.section}>3. 요청 항목</Text>
-        <View style={styles.requests}>
-          <Text style={styles.requestCaption}>해당하는 항목을 선택해주세요</Text>
-          <View style={styles.requestGrid}>
-            {REQUEST_OPTIONS.map((r) => (
-              <Pressable key={r.value} style={styles.requestRow} onPress={() => toggle(r.value)}>
-                <View style={[styles.checkbox, requests.includes(r.value) && styles.checkboxOn]}>
-                  {requests.includes(r.value) && (
-                    <Text style={{ color: "#fff", fontSize: 10 }}>✓</Text>
-                  )}
-                </View>
-                <Text style={styles.requestText}>{r.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
         <Pressable
-          style={[styles.primary, submitting && { opacity: 0.6 }]}
           disabled={submitting}
-          onPress={submit}
+          onPress={() => void submit()}
+          style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
         >
-          <Text style={styles.primaryText}>{submitting ? "신청 중..." : "예약 신청하기"}</Text>
+          <Text style={styles.ctaText}>{submitting ? "신청 중..." : "예약 신청하기"}</Text>
         </Pressable>
-        <Text style={styles.bottomCaption}>신청 후 매장에서 최종 연락을 드립니다</Text>
+        <Text style={styles.caption}>신청 후 매장에서 확정 연락을 드립니다</Text>
       </ScrollView>
+
+      <BottomTabBar active="home" />
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff" },
-  content: { padding: 20, paddingBottom: 45 },
-  title: { fontSize: 20, color: "#333", marginTop: 8 },
-  caption: { fontSize: 9, color: "#AAA", marginTop: 5 },
-  rule: { height: 1, backgroundColor: "#E9E9E9", marginVertical: 18 },
-  section: { fontSize: 12, color: "#444", marginBottom: 13, marginTop: 2 },
-  map: { height: 130, backgroundColor: "#DDD", alignItems: "center", justifyContent: "center" },
-  mapText: { fontSize: 13, color: "#666" },
-  storeBox: {
-    borderWidth: 1,
-    borderColor: "#DDD",
-    borderRadius: 6,
-    padding: 8,
-    marginTop: 10,
-    marginBottom: 20,
+  content: { padding: 20, paddingBottom: TAB_BAR_CLEARANCE + 20 },
+  title: { fontSize: 21, fontWeight: "800", color: "#111" },
+  rule: { height: 1, backgroundColor: "#DEDEDE", marginTop: 18, marginBottom: 4 },
+  section: { fontSize: 14, fontWeight: "700", color: "#1A1A1A", marginTop: 24, marginBottom: 12 },
+  map: {
+    height: 130,
+    borderRadius: 4,
+    backgroundColor: "#D9D9D9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
   },
-  storeLabel: { fontSize: 10, color: "#666", marginBottom: 8 },
+  mapText: { fontSize: 12.5, color: "#7A7A7A" },
+  storeLabel: { fontSize: 11.5, color: "#666", marginBottom: 8 },
+  storeRail: { gap: 10 },
   storeCard: {
-    width: 170,
-    minHeight: 79,
+    width: STORE_CARD_WIDTH,
+    borderWidth: 1,
+    borderColor: "#E3DED4",
+    borderRadius: 8,
+    padding: 14,
+    backgroundColor: "#fff",
+  },
+  storeCardOn: { borderColor: "#8A5A20", backgroundColor: "#FDFAF4" },
+  storeHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 7,
+  },
+  storeName: { fontSize: 13, fontWeight: "700", color: "#1A1A1A" },
+  storeDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: "#DEDEDE" },
+  storeDotOn: { backgroundColor: "#B8862B" },
+  storeSmall: { fontSize: 11, color: "#9A9A9A", marginBottom: 3 },
+
+  loading: { paddingVertical: 20 },
+  empty: { fontSize: 12, color: "#9A9A9A", paddingVertical: 14 },
+  timeLabel: { fontSize: 11.5, color: "#666", marginTop: 18, marginBottom: 9 },
+  slots: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  slot: {
+    minWidth: "22%",
+    height: 36,
+    paddingHorizontal: 8,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: "#DDD",
-    borderRadius: 5,
-    padding: 10,
-  },
-  storeOn: { borderColor: "#777" },
-  storeHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  storeName: { fontSize: 10, color: "#444" },
-  radio: { width: 13, height: 13, borderRadius: 7, borderWidth: 1, borderColor: "#BBB" },
-  radioOn: { borderWidth: 4, borderColor: "#555" },
-  small: { fontSize: 8, color: "#999", marginTop: 5 },
-  monthHead: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 14 },
-  month: { fontSize: 14, fontWeight: "700" },
-  arrow: { fontSize: 24, color: "#777" },
-  arrowDisabled: { color: "#DDD" },
-  week: { flexDirection: "row", marginTop: 14 },
-  weekText: { width: "14.285%", textAlign: "center", fontSize: 10, color: "#666" },
-  calendar: { flexDirection: "row", flexWrap: "wrap", marginTop: 5 },
-  day: {
-    width: "14.285%",
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 16,
-  },
-  dayOn: { backgroundColor: colors.dark },
-  dayText: { fontSize: 10, color: "#444" },
-  dayTextDisabled: { color: "#DDD" },
-  dayTextOn: { color: "#fff" },
-  timeLabel: { fontSize: 10, color: "#777", marginTop: 14, marginBottom: 8 },
-  timeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
-  time: {
-    width: "22.8%",
-    height: 31,
-    borderWidth: 1,
-    borderColor: "#E2E2E2",
-    borderRadius: 5,
     alignItems: "center",
     justifyContent: "center",
   },
-  timeOn: { backgroundColor: colors.dark, borderColor: colors.dark },
-  timeText: { fontSize: 9, color: "#555" },
-  timeTextOn: { color: "#fff" },
-  requests: { borderWidth: 1, borderColor: "#DDD", borderRadius: 6, padding: 12, marginBottom: 22 },
-  requestCaption: { fontSize: 8, color: "#AAA", marginBottom: 9 },
-  requestGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: 9 },
-  requestRow: { width: "50%", flexDirection: "row", alignItems: "center", gap: 8 },
+  slotOn: { backgroundColor: "#8A5A20", borderColor: "#8A5A20" },
+  slotText: { fontSize: 12, color: "#333" },
+  slotPm: { color: "#5B7BB8" },
+  slotTextOn: { color: "#fff", fontWeight: "600" },
+
+  items: { flexDirection: "row", flexWrap: "wrap", rowGap: 14, columnGap: 12 },
+  item: { width: "46%", flexDirection: "row", alignItems: "center", gap: 9 },
   checkbox: {
-    width: 18,
-    height: 18,
+    width: 22,
+    height: 22,
+    borderRadius: 3,
     borderWidth: 1,
-    borderColor: "#CCC",
-    borderRadius: 3,
+    borderColor: "#D5D0C7",
     alignItems: "center",
     justifyContent: "center",
   },
-  checkboxOn: { backgroundColor: "#444", borderColor: "#444" },
-  requestText: { fontSize: 9, color: "#555" },
-  primary: {
-    height: 48,
-    borderRadius: 3,
-    backgroundColor: colors.dark,
+  checkboxOn: { backgroundColor: "#7A4E15", borderColor: "#7A4E15" },
+  check: { color: "#fff", fontSize: 11 },
+  itemLabel: { fontSize: 12, color: "#333" },
+
+  cta: {
+    height: 62,
+    borderRadius: 10,
+    backgroundColor: "#7A4E15",
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 30,
   },
-  primaryText: { color: "#fff", fontSize: 11 },
-  bottomCaption: { textAlign: "center", fontSize: 8, color: "#AAA", marginTop: 9 },
+  ctaPressed: { backgroundColor: "#8F5D1D", transform: [{ scale: 0.98 }] },
+  ctaText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  caption: { fontSize: 11, color: "#B0B0B0", textAlign: "center", marginTop: 12 },
 });
