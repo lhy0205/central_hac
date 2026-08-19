@@ -1,0 +1,28 @@
+# 하자 클래스 정의 (YOLO-seg 학습용)
+# 실제 데이터를 보면서 클래스를 합치거나 나눠도 됨. 처음엔 너무 세분화하지 않는 게 좋음.
+
+names:
+  0: tear            # 찢어짐/파손
+  1: scratch         # 스크래치/긁힘
+  2: stain           # 얼룩/변색
+  3: wear            # 마모 (가죽 벗겨짐, 밑창 닳음 등)
+  4: sole_separation # 밑창 분리/박리 (구두)
+  5: zipper_damage   # 지퍼/버클 파손 (가방)
+  6: deformation     # 형태 변형/찌그러짐
+
+# 심각도 판정 기준 (infer.py의 assess_severity()에서 사용)
+# mask_area_ratio = 하자 마스크 면적 / 제품 전체 바운딩박스 면적
+severity_rules:
+  minor:     { max_area_ratio: 0.03, label: "경미", repair: "자가 관리 또는 간단 클리닝으로 충분" }
+  moderate:  { max_area_ratio: 0.10, label: "중간", repair: "전문 수선점 방문 권장" }
+  severe:    { max_area_ratio: 1.00, label: "심각", repair: "전문 수선 또는 부분 교체 필요" }
+
+# 클래스별 가중치 (같은 면적이라도 종류에 따라 심각도 다르게 취급하고 싶을 때 조정)
+class_severity_bias:
+  tear: 1.5
+  sole_separation: 1.3
+  zipper_damage: 1.2
+  deformation: 1.2
+  wear: 1.0
+  scratch: 0.7
+  stain: 0.6

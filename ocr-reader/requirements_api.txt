@@ -1,0 +1,11 @@
+# GPU 있는 환경(권장 — CPU는 실사용 사진 한 장에 1분 이상 걸릴 수 있음, README 참고) 기본값.
+# GPU 없는 환경이면 이 줄을 지우고 `pip install paddlepaddle` (plain CPU 버전)을 따로 설치할 것.
+--extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cu118/
+paddlepaddle-gpu==3.2.0
+
+fastapi
+uvicorn[standard]
+python-multipart
+paddleocr>=3.2.0
+opencv-python-headless
+numpy
