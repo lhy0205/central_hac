@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 22,
-    paddingBottom: 30,
+    paddingBottom: TAB_BAR_CLEARANCE + 20,
   },
   introGrip: {
     width: 40,

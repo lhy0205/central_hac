@@ -53,18 +53,34 @@ public class MlWearDiagnosisEngine implements WearDiagnosisEngine {
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
 
+    // 하자 탐지 서버(api_server.py)가 인증에 쓰는 헤더 이름.
+    private static final String API_KEY_HEADER = "X-API-Key";
+
     private final RestClient imageDownloadClient;
     private final RestClient defectApiClient;
 
-    public MlWearDiagnosisEngine(RestClient.Builder restClientBuilder, String defectApiBaseUrl) {
+    public MlWearDiagnosisEngine(
+        RestClient.Builder restClientBuilder,
+        String defectApiBaseUrl,
+        String defectApiKey
+    ) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout((int) CONNECT_TIMEOUT.toMillis());
         factory.setReadTimeout((int) READ_TIMEOUT.toMillis());
         this.imageDownloadClient = restClientBuilder.clone().requestFactory(factory).build();
-        this.defectApiClient = restClientBuilder.clone()
+
+        RestClient.Builder defectBuilder = restClientBuilder.clone()
             .requestFactory(factory)
-            .baseUrl(defectApiBaseUrl)
-            .build();
+            .baseUrl(defectApiBaseUrl);
+        /* 키가 비어 있으면 헤더를 아예 붙이지 않는다. 빈 값을 보내면 서버가 키를 켜 둔 경우
+           "틀린 키"로 판정해 401을 내고, 키를 끈 경우와 구분이 안 된다. */
+        if (defectApiKey != null && !defectApiKey.isBlank()) {
+            defectBuilder = defectBuilder.defaultHeader(API_KEY_HEADER, defectApiKey.trim());
+        } else {
+            log.warn("DEFECT_API_KEY가 비어 있어 인증 헤더 없이 하자 탐지 서버를 호출합니다. "
+                + "서버에 API_KEY가 설정돼 있으면 401로 거절됩니다.");
+        }
+        this.defectApiClient = defectBuilder.build();
     }
 
     @Override
@@ -148,7 +164,15 @@ public class MlWearDiagnosisEngine implements WearDiagnosisEngine {
                 .retrieve()
                 .body(PredictResponse.class);
         } catch (HttpClientErrorException e) {
-            // 4xx는 ML 서버의 의도적 입력 오류다(예: 깨진 이미지에 400). HttpClientErrorException은
+            /* 401/403은 사진 문제가 아니라 API 키 문제다. 이걸 "이미지를 읽을 수 없음"으로
+               내보내면 사용자는 멀쩡한 사진을 계속 다시 찍게 되고, 진짜 원인(키 불일치)은
+               로그를 뒤지기 전까지 드러나지 않는다. */
+            if (e.getStatusCode().value() == 401 || e.getStatusCode().value() == 403) {
+                log.error("하자 탐지 API 인증 실패 (status={}). DEFECT_API_KEY와 서버의 API_KEY가 "
+                    + "같은 값인지 확인할 것.", e.getStatusCode());
+                throw new ApiException(ErrorCode.DEFECT_DETECTION_UNAVAILABLE);
+            }
+            // 나머지 4xx는 ML 서버의 의도적 입력 오류다(예: 깨진 이미지에 400). HttpClientErrorException은
             // RestClientException의 하위 타입이라 아래 catch에 같이 잡히면 "서비스 연결 불가"로
             // 둔갑해 재촬영 안내 대신 같은 사진 재시도만 반복하게 된다.
             log.warn("하자 탐지 API가 입력 오류를 반환 (status={}, url={})", e.getStatusCode(), imageUrl);

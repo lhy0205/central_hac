@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router";
+﻿import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -218,6 +218,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   filledText: { fontSize: 13, color: "#fff", fontWeight: "500" },
-  wide: { flex: 0, marginTop: "auto" },
+  wide: { flex: 0, marginTop: "auto", marginBottom: 12 },
   pressed: { transform: [{ scale: 0.98 }] },
 });

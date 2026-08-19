@@ -1,4 +1,4 @@
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+﻿import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -58,6 +58,7 @@ export default function Passport() {
   const unfurl = useRef(new Animated.Value(0)).current;
   const [flyFrom, setFlyFrom] = useState({ x: 0, y: 0 });
   const [flyType, setFlyType] = useState("기타");
+  const landTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const mapWidth = width - 40;
 
@@ -114,7 +115,12 @@ export default function Passport() {
         easing: Easing.bezier(0.3, 0.8, 0.3, 1),
         useNativeDriver: true,
       }),
-    ]).start(() => {
+    ]).start();
+
+    /* 애니메이션 콜백에만 기대면 화면이 백그라운드로 갔다 오는 등으로 콜백이 안 올 때
+       도장이 화면에 남고 기록은 투명한 채로 멈춘다. 시간으로도 반드시 마무리한다. */
+    clearTimeout(landTimer.current);
+    landTimer.current = setTimeout(() => {
       flyOn.setValue(0);
       Animated.timing(unfurl, {
         toValue: 1,
@@ -122,7 +128,9 @@ export default function Passport() {
         easing: Easing.bezier(0.22, 0.9, 0.3, 1),
         useNativeDriver: true,
       }).start();
-    });
+      // 애니메이션이 어떤 이유로든 끝나지 않아도 내용은 보여야 한다.
+      setTimeout(() => unfurl.setValue(1), 900);
+    }, 540);
   }
 
   function closeStamp() {

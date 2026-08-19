@@ -1,6 +1,6 @@
 ﻿import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -22,6 +22,7 @@ import { PhotoPicker, validatePhotos, type PickedPhoto } from "../../src/compone
 import { Header } from "../../src/components/UI";
 import { COLOR_SWATCH, MOCK_PRODUCTS, priceText } from "../../src/register/catalog";
 import { recognizeSerial } from "../../src/register/ocr";
+import { SerialScanner } from "../../src/register/SerialScanner";
 import { colors } from "../../src/theme";
 
 type UsageFrequency = "DAILY" | "FEW_TIMES_A_WEEK" | "OCCASIONAL" | "RARE";
@@ -72,8 +73,6 @@ export default function Register() {
   const [transferLoading, setTransferLoading] = useState(false);
 
   // 스캔 / 일련번호
-  const [labelPhoto, setLabelPhoto] = useState<PickedPhoto[]>([]);
-  const [ocrLoading, setOcrLoading] = useState(false);
   const [scannedSerial, setScannedSerial] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
   const [serialConfirm, setSerialConfirm] = useState("");
@@ -92,15 +91,6 @@ export default function Register() {
   const [baselinePhotos, setBaselinePhotos] = useState<Record<string, PickedPhoto[]>>({});
   const [nickname, setNickname] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const autoShot = useRef(false);
-
-  // 스캔 화면에 들어오면 기다리지 않고 바로 카메라를 연다.
-  useEffect(() => {
-    if (step !== "scan" || autoShot.current) return;
-    autoShot.current = true;
-    void takeSerialPhoto();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
 
   async function redeemTransfer() {
     const normalized = code.trim().toUpperCase();
@@ -119,57 +109,6 @@ export default function Register() {
       );
     } finally {
       setTransferLoading(false);
-    }
-  }
-
-  /* 스캔 단계에 들어오면 곧바로 카메라를 띄운다. 예전에는 "카메라 촬영 / 사진 선택" 버튼을
-     먼저 보여줬는데, 화면은 스캐너처럼 생겨 놓고 카메라가 안 열려서 멈춘 것처럼 보였다. */
-  async function takeSerialPhoto() {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert(
-        "카메라 권한이 필요합니다",
-        "일련번호를 촬영하려면 설정에서 카메라 권한을 허용해주세요.",
-        [
-          { text: "취소", style: "cancel" },
-          { text: "설정 열기", onPress: () => Linking.openSettings() },
-        ],
-      );
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"],
-      quality: 0.85,
-      allowsEditing: false,
-    });
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    await runOcr([
-      {
-        uri: asset.uri,
-        name: asset.fileName ?? `serial-${Date.now()}.jpg`,
-        type: asset.mimeType ?? "image/jpeg",
-        fileSize: asset.fileSize,
-      },
-    ]);
-  }
-
-  // 촬영한 라벨 사진을 OCR 서버로 보내 일련번호를 자동으로 읽어낸다. 실패해도 확인 화면으로
-  // 넘어간다 — 거기서 "아닙니다"를 누르면 직접 입력할 수 있다.
-  async function runOcr(photos: PickedPhoto[]) {
-    setLabelPhoto(photos);
-    if (photos.length === 0) return;
-    setOcrLoading(true);
-    try {
-      const result = await recognizeSerial(photos[0]);
-      setScannedSerial(result.bestCodeGuess ?? "");
-    } catch (error) {
-      setScannedSerial("");
-      const message = error instanceof Error ? error.message : String(error);
-      Alert.alert("자동 인식 실패", `${message}\n직접 입력해주세요.`);
-    } finally {
-      setOcrLoading(false);
-      setStep("confirm");
     }
   }
 
@@ -231,8 +170,21 @@ export default function Register() {
       !storeSearch || store.name.includes(storeSearch) || store.address.includes(storeSearch),
   );
 
-  // 카메라 화면은 전체 화면 몰입이라 헤더를 쓰지 않는다.
-  if (step === "scan" || step === "confirm" || step === "manual") {
+  // 스캔은 카메라를 계속 띄워 놓고 자동으로 읽는다.
+  if (step === "scan") {
+    return (
+      <SerialScanner
+        onClose={() => setStep("choose")}
+        onFound={(found) => {
+          setScannedSerial(found);
+          setStep("confirm");
+        }}
+      />
+    );
+  }
+
+  // 확인/직접입력은 스캔 화면 위에 시트로 올라간다.
+  if (step === "confirm" || step === "manual") {
     return (
       <View style={styles.camera}>
         <View style={styles.cameraHead}>
@@ -254,23 +206,6 @@ export default function Register() {
           <View style={[styles.corner, styles.cornerBL]} />
           <View style={[styles.corner, styles.cornerBR]} />
         </View>
-
-        {step === "scan" ? (
-          <View style={styles.shutterRow}>
-            {ocrLoading ? (
-              <View style={styles.status}>
-                <ActivityIndicator color="#fff" />
-                <Text style={styles.statusText}>일련번호 인식 중…</Text>
-              </View>
-            ) : (
-              <Pressable
-                accessibilityLabel="일련번호 촬영"
-                onPress={() => void takeSerialPhoto()}
-                style={({ pressed }) => [styles.shutter, pressed && styles.shutterPressed]}
-              />
-            )}
-          </View>
-        ) : null}
 
         {step === "confirm" ? (
           <View style={styles.sheet}>
@@ -849,7 +784,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   sheetQuestion: { fontSize: 12.5, color: "#333", marginBottom: 14 },
-  sheetRow: { flexDirection: "row", gap: 10 },
+  sheetRow: { flexDirection: "row", gap: 10, marginTop: 4 },
 
   catalogBox: {
     borderWidth: 1,
@@ -959,7 +894,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 22,
-    paddingBottom: 46,
+    paddingBottom: TAB_BAR_CLEARANCE + 20,
   },
   introGrip: {
     width: 40,

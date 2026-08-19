@@ -35,3 +35,5 @@ notification:
 wear-diagnosis:
   engine: ${WEAR_DIAGNOSIS_ENGINE:rule-based}
   defect-api-url: ${DEFECT_API_URL:http://localhost:8000}
+  # 하자 탐지 서버가 API_KEY로 잠겨 있으면 같은 값을 넣는다. 비우면 헤더 없이 호출한다.
+  defect-api-key: ${DEFECT_API_KEY:}

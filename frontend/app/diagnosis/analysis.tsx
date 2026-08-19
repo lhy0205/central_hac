@@ -1,8 +1,8 @@
-import { router, useLocalSearchParams } from "expo-router";
+﻿import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { Header } from "../../src/components/UI";
-import { diagnosisApi } from "../../src/api/client";
+import { ApiError, diagnosisApi } from "../../src/api/client";
 import type { PickedPhoto } from "../../src/components/PhotoPicker";
 import { common, colors } from "../../src/theme";
 export default function Analysis() {
@@ -41,10 +41,23 @@ export default function Analysis() {
           params: { id: String(diagnosis.id), passportId: id },
         });
       })
-      .catch(() => {
+      .catch((reason) => {
         if (cancelled) return;
         clearInterval(timer);
-        Alert.alert("진단 실패", "진단 처리 중 문제가 발생했습니다. 다시 시도해주세요.", [
+        /* 예전에는 무슨 실패든 같은 문구만 띄워서 재촬영하면 되는지, 서버가 죽은 건지
+           구분할 수 없었다. 백엔드가 주는 코드에 맞춰 다음에 뭘 해야 하는지 알려준다. */
+        const code = reason instanceof ApiError ? reason.code : "";
+        const detail =
+          reason instanceof ApiError
+            ? reason.message
+            : "서버에 연결할 수 없습니다. 네트워크와 백엔드 상태를 확인해주세요.";
+        const guide =
+          code === "DIAGNOSIS_IMAGE_UNREADABLE"
+            ? "사진을 다시 촬영해주세요. 밝은 곳에서 초점을 맞추면 인식률이 올라갑니다."
+            : code === "DEFECT_DETECTION_UNAVAILABLE"
+              ? "진단 AI 서버에 연결하지 못했습니다. 잠시 후 다시 시도해주세요."
+              : "잠시 후 다시 시도해주세요.";
+        Alert.alert("진단 실패", `${detail}\n\n${guide}${code ? `\n(${code})` : ""}`, [
           { text: "확인", onPress: () => router.back() },
         ]);
       });

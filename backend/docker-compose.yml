@@ -1,4 +1,4 @@
-# MCM Nomad Passport — 백엔드 + DB.
+﻿# MCM Nomad Passport — 백엔드 + DB.
 #
 # (2026-08-19) AI 서버 2개(defect-detection, ar-identification)를 이 서버에서 분리해
 # 외부 AI 서버(Elice 터널)로 옮겼다. 이 compose는 더 이상 AI를 빌드/실행하지 않는다.
@@ -41,10 +41,9 @@ services:
       # 실제 AI로 진단하려면 .env에서 ml로 바꾼다.
       WEAR_DIAGNOSIS_ENGINE: ${WEAR_DIAGNOSIS_ENGINE:-rule-based}
       # 외부 AI 서버(Elice 터널)의 defect-detection 주소. 값은 .env에서 온다.
-      # 주의: 이 이미지의 코드는 아직 API 키 헤더를 보내지 않는다(그 서버도 지금은 인증을
-      # 요구하지 않음) — 나중에 인증이 붙으면 MlWearDiagnosisEngine에 헤더 전송 코드를
-      # 추가하는 백엔드 코드 변경 및 재배포가 별도로 필요하다.
       DEFECT_API_URL: ${DEFECT_API_URL:-http://defect-detection:8000}
+      # 하자 탐지 서버가 API_KEY로 잠겨 있으면 같은 값을 넣는다. 비우면 헤더 없이 호출한다.
+      DEFECT_API_KEY: ${DEFECT_API_KEY:-}
       # 재구매 제안(REPURCHASE) 알림 조건. 기본 1095일(3년)이라 데모용으로 방금 만든
       # 데이터로는 절대 뜨지 않는다 — 시연할 때 .env에서 1 같은 값으로 낮춘다.
       NOTIFICATION_REPURCHASE_OWNERSHIP_DAYS: ${NOTIFICATION_REPURCHASE_OWNERSHIP_DAYS:-1095}
