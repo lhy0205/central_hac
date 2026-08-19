@@ -1,0 +1,37 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/mcm_passport}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+jwt:
+  secret: ${JWT_SECRET:change-this-secret-change-this-secret-32chars-min}
+  expiration-ms: 86400000
+
+cloudinary:
+  url: ${CLOUDINARY_URL:cloudinary://key:secret@demo}
+
+notification:
+  reminder-threshold-days: 90
+  reminder-cooldown-days: 30
+  # 재구매 제안(FR-NOT-03/06)이 뜨는 조건. Care-First 원칙에 따라 둘 다 만족해야 한다 —
+  # 이만큼 오래 소유했고, 최근 진단이 연속으로 D등급일 때만.
+  repurchase-ownership-days: 1095
+  repurchase-consecutive-urgent: 2
+
+wear-diagnosis:
+  engine: ${WEAR_DIAGNOSIS_ENGINE:rule-based}
+  defect-api-url: ${DEFECT_API_URL:http://localhost:8000}

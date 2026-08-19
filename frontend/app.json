@@ -1,0 +1,75 @@
+{
+  "expo": {
+    "name": "MCM Care",
+    "slug": "mcm-care-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "mcmcare",
+    "icon": "./assets/app-icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F6EFE1"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.mcm.care",
+      "infoPlist": {
+        "NSCameraUsageDescription": "가방을 비추면 히스토리를 보여드리기 위해 카메라를 사용합니다."
+      }
+    },
+    "android": {
+      "package": "com.mcm.care",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/app-icon.png",
+        "backgroundColor": "#F6EFE1"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "usesCleartextTraffic": true,
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "진단과 케어 기록에 사용할 사진을 선택합니다.",
+          "cameraPermission": "제품 상태를 촬영하기 위해 카메라를 사용합니다."
+        }
+      ],
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "가방을 비추면 히스토리를 보여드리기 위해 카메라를 사용합니다.",
+          "enableMicrophonePermission": false
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "apiBaseUrl": "${EXPO_PUBLIC_API_BASE_URL}",
+      "router": {},
+      "eas": {
+        "projectId": "e50be73d-610d-4af9-b500-3ef430d49012"
+      }
+    },
+    "owner": "leesudal"
+  }
+}

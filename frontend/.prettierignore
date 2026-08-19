@@ -1,0 +1,7 @@
+node_modules/
+.expo/
+dist/
+android/
+ios/
+# AI 인식 서버는 Python이라 별도 도구로 관리한다.
+server/

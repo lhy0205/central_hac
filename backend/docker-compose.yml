@@ -1,0 +1,57 @@
+# MCM Nomad Passport — 백엔드 + DB.
+#
+# (2026-08-19) AI 서버 2개(defect-detection, ar-identification)를 이 서버에서 분리해
+# 외부 AI 서버(Elice 터널)로 옮겼다. 이 compose는 더 이상 AI를 빌드/실행하지 않는다.
+# backend는 DEFECT_API_URL(.env)로 외부 AI 서버의 defect-detection을 인터넷 너머로 호출한다.
+# ar-identification은 원래도 앱이 백엔드를 거치지 않고 직접 호출하던 구조라 이 서버에서
+# 내려도 backend 동작에는 영향이 없다 — 앱 쪽 EXPO_PUBLIC_AR_API_BASE_URL을 외부 AI 서버
+# 주소로 바꾸는 것만 필요하다.
+#
+# 실행 전 이 디렉터리에 .env 작성 — .env.example 참고
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: mcm_passport
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d mcm_passport"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: ghcr.io/junyoung0321/mcm-nomad-passport-backend:${IMAGE_TAG:-latest}
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/mcm_passport
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      # 기본값을 그대로 쓰면 누구나 토큰을 위조할 수 있어 앱이 기동 시점에 실패한다. 반드시 .env에 설정할 것.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET을 .env에 설정해야 합니다 (32바이트 이상)}
+      CLOUDINARY_URL: ${CLOUDINARY_URL:?CLOUDINARY_URL을 .env에 설정해야 합니다}
+      # 힙 상한을 두지 않으면 JVM이 머신 메모리 기준으로 알아서 잡아 4GB 서버에서는 과하게 쓴다.
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--Xmx512m -Djava.net.preferIPv4Stack=true}
+      # 하자 탐지 모델은 아직 프로토타입(mask mAP50 ~0.23)이라 기본은 rule-based.
+      # 실제 AI로 진단하려면 .env에서 ml로 바꾼다.
+      WEAR_DIAGNOSIS_ENGINE: ${WEAR_DIAGNOSIS_ENGINE:-rule-based}
+      # 외부 AI 서버(Elice 터널)의 defect-detection 주소. 값은 .env에서 온다.
+      # 주의: 이 이미지의 코드는 아직 API 키 헤더를 보내지 않는다(그 서버도 지금은 인증을
+      # 요구하지 않음) — 나중에 인증이 붙으면 MlWearDiagnosisEngine에 헤더 전송 코드를
+      # 추가하는 백엔드 코드 변경 및 재배포가 별도로 필요하다.
+      DEFECT_API_URL: ${DEFECT_API_URL:-http://defect-detection:8000}
+      # 재구매 제안(REPURCHASE) 알림 조건. 기본 1095일(3년)이라 데모용으로 방금 만든
+      # 데이터로는 절대 뜨지 않는다 — 시연할 때 .env에서 1 같은 값으로 낮춘다.
+      NOTIFICATION_REPURCHASE_OWNERSHIP_DAYS: ${NOTIFICATION_REPURCHASE_OWNERSHIP_DAYS:-1095}
+      NOTIFICATION_REPURCHASE_CONSECUTIVE_URGENT: ${NOTIFICATION_REPURCHASE_CONSECUTIVE_URGENT:-2}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

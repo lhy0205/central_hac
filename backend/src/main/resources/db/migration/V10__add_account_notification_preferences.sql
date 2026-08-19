@@ -1,0 +1,3 @@
+ALTER TABLE account ADD COLUMN care_alerts_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE account ADD COLUMN journey_alerts_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE account ADD COLUMN marketing_alerts_enabled BOOLEAN NOT NULL DEFAULT FALSE;

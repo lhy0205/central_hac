@@ -1,0 +1,59 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### 로컬 시크릿 (CLOUDINARY_URL, JWT_SECRET 등) — 절대 커밋 금지 ###
+.env
+.env.local
+
+### 프론트/AI 산출물 (별도 저장소 관리, 백엔드 리포에는 커밋하지 않음) ###
+*.zip
+
+### ml/defect-detection (Python) ###
+ml/**/__pycache__/
+ml/**/*.pyc
+ml/**/.venv/
+ml/**/*.log
+
+### AI 모델 가중치 ###
+# GitHub 무료 LFS는 저장·대역폭이 각 1GB뿐이라 clone할 때마다 한도가 깎인다.
+# 저장소에 두지 않고 별도 공유한다 — 받는 방법은 ml/defect-detection/README.md 참고.
+ml/**/*.pt
+
+# 로컬 개발 전용 compose 오버라이드(db 포트 노출 등) — 환경마다 달라 커밋하지 않는다.
+docker-compose.override.yml
+
