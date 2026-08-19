@@ -1,7 +1,3 @@
-"""data/processed/<productId>__<name>/*.jpg 를 SKU 분류용 데이터셋으로 로드.
-SKU당 이미지 1장을 검증셋으로 떼어내고 나머지로 학습한다 (이미지가 매우 적은 SKU는
-검증 없이 전량 학습에 사용).
-"""
 import json
 import random
 from pathlib import Path
@@ -57,7 +53,7 @@ def build_splits(processed_dir: Path, seed: int = 0):
             val_items.append((imgs[0], label))
             train_imgs = imgs[1:]
         else:
-            train_imgs = imgs  # 이미지가 너무 적으면 검증 없이 전부 학습
+            train_imgs = imgs 
         for p in train_imgs:
             train_items.append((p, label))
 
