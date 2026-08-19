@@ -11,7 +11,7 @@ __pycache__/
 
 # 모델 가중치/대용량 산출물 — 각 프로젝트 README에 받는 방법 안내됨(구글 드라이브 등).
 # GitHub 무료 LFS(저장/대역폭 각 1GB) 한도 때문에 저장소에는 올리지 않음.
-defect-detection/best.pt
-ar-identification/detection/weights/bag_detect.pt
-ar-identification/identification/checkpoints/best.pt
-ar-identification/data/gallery/gallery_embeddings.npz
+AI/defect-detection/best.pt
+AI/ar-identification/detection/weights/bag_detect.pt
+AI/ar-identification/identification/checkpoints/best.pt
+AI/ar-identification/data/gallery/gallery_embeddings.npz
