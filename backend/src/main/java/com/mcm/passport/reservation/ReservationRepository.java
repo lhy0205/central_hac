@@ -28,8 +28,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     void cancelAllRequestedForPassport(Long passportId);
 
     // AccountService.withdraw()에서만 사용: 여권마다 cancelAllRequestedForPassport를 한 번씩 부르면
-    // 소유 여권이 N개인 계정의 탈퇴가 N번의 왕복이 되므로, id 목록 전체를 한 번에 취소한다
-    // .
+    // 소유 여권이 N개인 계정의 탈퇴가 N번의 왕복이 되므로, id 목록 전체를 한 번에 취소한다.
     @Transactional
     @Modifying
     @Query("update Reservation r set r.status = com.mcm.passport.reservation.ReservationStatus.CANCELLED " +

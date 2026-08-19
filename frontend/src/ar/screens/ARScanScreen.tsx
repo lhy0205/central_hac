@@ -21,22 +21,18 @@ export default function ARScanScreen({
   onCapture: (result: IdentifyResponse) => void;
 }) {
   const device = useCameraDevice("back");
-  // VisionCamera는 CameraX(ProcessCameraProvider)를 비동기로 초기화하고, 끝나기 전까지
-  // getAvailableCameraDevices()가 빈 배열을 돌려준다. 그래서 첫 렌더에서 device는 거의
-  // 항상 undefined다 — 이걸 곧바로 "카메라 없음"으로 단정하면 정상 기기에서도 오진이 된다.
-  // 목록이 채워질 때까지 기다렸다가, 그래도 비어 있으면 그때 오류로 처리한다.
+  // VisionCamera는 CameraX를 비동기로 초기화해서 첫 렌더에서 device가 거의 항상 undefined다.
+  // 곧바로 "카메라 없음"으로 단정하지 말고 목록이 채워질 때까지 기다린다.
   const devices = useCameraDevices();
-  // 기본 촬영 포맷은 센서 최대 해상도(12MP 이상, JPEG 수 MB)라 업로드가 병목이 된다.
-  // 서버는 어차피 탐지 후 크롭을 224px로 줄여서 쓰므로(identification/dataset.py의
-  // eval_transform) 고해상도를 보낼 이유가 없다. 1280x720이면 인식에 충분하고
-  // 업로드는 수백 KB 수준으로 떨어진다.
+  // 기본 촬영 포맷은 센서 최대 해상도라 업로드가 병목이 된다. 서버는 탐지 후 224px로 줄여서
+  // 쓰므로(identification/dataset.py의 eval_transform) 1280x720이면 충분하다.
   const format = useCameraFormat(device, [{ photoResolution: { width: 1280, height: 720 } }]);
   const { hasPermission, requestPermission } = useCameraPermission();
   const [initTimedOut, setInitTimedOut] = useState(false);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    // 진단용: 네이티브가 실제로 어떤 기기를 보고하는지 Metro 콘솔에 남긴다.
+    // 네이티브가 어떤 기기를 보고하는지 Metro 콘솔에 남긴다(디버깅용).
     console.warn(
       `[AR] devices=${devices.length} permission=${hasPermission} ` +
         `list=${JSON.stringify(devices.map((d) => ({ id: d.id, pos: d.position })))}`,
@@ -56,8 +52,7 @@ export default function ARScanScreen({
   const [captureError, setCaptureError] = useState<string | null>(null);
   const cameraRef = useRef<Camera>(null);
 
-  // 권한이 없으면 CameraX가 기기를 바인딩하지 못한다. 인트로를 거치지 않고 결과 화면에서
-  // 되돌아온 경우나 설정에서 권한을 껐다 온 경우가 여기 해당한다.
+  // 권한이 없으면 CameraX가 기기를 바인딩하지 못한다.
   if (!hasPermission) {
     return (
       <View style={styles.centerFallback}>
@@ -102,8 +97,7 @@ export default function ARScanScreen({
     );
   }
 
-  // 제품 인식은 전적으로 서버(/identify)가 한다. 온디바이스 사전 분류가 없으므로
-  // 촬영은 요청이 진행 중일 때만 막으면 된다.
+  // 제품 인식은 서버(/identify)가 한다. 온디바이스 분류가 없으니 요청 중일 때만 막으면 된다.
   const canCapture = !identifying;
 
   async function handleShutter() {

@@ -24,15 +24,9 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// @AutoConfigureMockMvc follows the same pattern established by PassportControllerIntegrationTest
-// : AbstractIntegrationTest's bare @SpringBootTest does not register a MockMvc bean,
-// and the real SecurityFilterChain (no addFilters=false) must stay wired so this test actually
-// exercises the real filter chain + @RequestParam binding end-to-end.
-//
-// ImageStorageService is @MockBean'd here (not exercised for real) because the real
-// CloudinaryImageStorageService would attempt a network call to Cloudinary using the
-// demo/fake credentials from application.yml -- unrelated to what this test is verifying
-// (multipart form-field binding of diagnosisType), and would make the test flaky/slow/networked.
+// AbstractIntegrationTest의 기본 @SpringBootTest는 MockMvc 빈을 안 만들어줘서 @AutoConfigureMockMvc가 필요.
+// 시큐리티 필터 체인도 실제로 태워야 하니 addFilters=false는 쓰지 않는다.
+// ImageStorageService는 실제 Cloudinary 호출을 막으려고 목으로 대체.
 @AutoConfigureMockMvc
 class DiagnosisControllerIntegrationTest extends AbstractIntegrationTest {
 
@@ -50,13 +44,9 @@ class DiagnosisControllerIntegrationTest extends AbstractIntegrationTest {
     @MockBean
     private ImageStorageService imageStorageService;
 
-    // Regression test for the original defect: @RequestPart("diagnosisType") DiagnosisType
-    // returned HTTP 415 for an ordinary multipart form field (Content-Type: text/plain or
-    // absent), which is how every real multipart client (curl -F, mobile app form encoders)
-    // sends a non-file field. The fix switched to @RequestParam, which binds via Spring's
-    // ConversionService (StringToEnumConverterFactory) regardless of the field's Content-Type.
-    // This test sends diagnosisType the way a real client would -- as a plain form field via
-    // .param(), NOT as a JSON-typed @RequestPart -- so it would have caught the original bug.
+    // diagnosisType은 JSON @RequestPart가 아니라 실제 클라이언트(curl -F, 모바일 폼 인코더)처럼
+    // 평범한 폼 필드(.param())로 보낸다 -- @RequestPart로 받으면 text/plain 폼 필드가 415로 거부되니
+    // @RequestParam으로 ConversionService를 태워야 함.
     @Test
     void submitWithOrdinaryFormFieldDiagnosisTypeReturns201() throws Exception {
         Account owner = accountRepository.save(

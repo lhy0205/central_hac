@@ -71,9 +71,8 @@ class SlotGridCalculatorTest {
 
     @Test
     void gridForExcludesSlotThatWouldCrossMidnight() {
-        // LocalTime.plusMinutes/isAfter는 24:00을 넘으면 감싸(wrap)돌아
-        // 23:00 + 90분 = 00:30이 되고, 00:30.isAfter(23:30)이 false라 자정을 넘기는 슬롯이 잘못
-        // 포함될 뻔했다. 분 단위 정수 비교로 고친 뒤에는 그 슬롯이 제외돼야 한다.
+        // LocalTime.plusMinutes/isAfter는 24:00을 넘으면 wrap돼서 23:00+90분이 00:30이 되고
+        // isAfter(23:30)이 false가 나올 수 있음 — 분 단위 정수 비교로 자정 넘는 슬롯은 제외해야 함
         Store store = storeWithHours(LocalTime.of(23, 0), LocalTime.of(23, 30), 90);
 
         var grid = SlotGridCalculator.gridFor(store, LocalDate.of(2026, 9, 1));

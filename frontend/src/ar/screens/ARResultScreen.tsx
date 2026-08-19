@@ -18,8 +18,7 @@ import { getProductClassLabel } from "../productLabels";
 import { getStory } from "../storyData";
 import { getStoryVideo } from "../storyVideos";
 
-// AR 스캔이 겨냥하는 제품군(탐지 모델 17클래스 중). 나머지(의류·신발 등)는 대개
-// 착용자나 배경이 같이 잡힌 것이라 대표 탐지로 올리지 않는다.
+// AR 스캔이 겨냥하는 제품군(탐지 모델 17클래스 중). 나머지(의류·신발 등)는 대표 탐지로 올리지 않는다.
 const BAG_FAMILY = new Set(["Handbag", "Backpack", "Suitcase", "Wallet"]);
 
 const HANDLE_HEIGHT = 40;
@@ -40,17 +39,14 @@ export default function ARResultScreen({
 }) {
   const insets = useSafeAreaInsets();
   const windowHeight = useWindowDimensions().height;
-  // 접혔을 때 남기는 여백(PEEK_HEIGHT)에 하단 세이프에어리어(제스처 네비게이션 영역)를 더한다.
-  // 이걸 안 더하면 핸들이 화면 맨 아래 가장자리에 붙어서, 제스처 내비게이션이 있는 기기에서
-  // 터치가 시스템 제스처(뒤로가기/홈)에 먼저 먹혀 드래그 자체가 시작되지 않는다.
+  // PEEK_HEIGHT에 하단 세이프에어리어를 더해야 한다 — 안 그러면 핸들이 화면 맨 아래에 붙어서
+  // 제스처 내비게이션 기기에서 터치가 시스템 제스처에 먼저 먹혀버린다.
   const SHEET_HEIGHT = Math.round(windowHeight * 0.62);
   const PEEK_HEIGHT = HANDLE_HEIGHT + insets.bottom + 12;
   const COLLAPSED_Y = SHEET_HEIGHT - PEEK_HEIGHT;
 
-  // 여러 제품이 한 사진에 잡혀도 하나를 대표로 보여준다. 단순히 확신도 최댓값으로 고르면,
-  // 사람이 든 가방을 찍었을 때 배경의 바지(0.91)가 가방(0.85)을 이겨 바지 스토리와 바지
-  // 후보가 뜬다. 스캔 화면이 "가방 전체를 안내선에 맞춰주세요"라고 안내하므로 가방류를
-  // 먼저 고르고, 그 안에서 확신도로 정렬한다. 가방류가 없을 때만 나머지를 본다.
+  // 확신도 최댓값으로만 고르면 배경의 바지가 가방보다 점수가 높아서 바지 스토리가 뜨는
+  // 경우가 있다. 가방류를 먼저 우선하고, 그 안에서 확신도로 정렬한다.
   const primary =
     [...result.detections].sort((a, b) => {
       const aBag = BAG_FAMILY.has(a.class) ? 1 : 0;
@@ -61,23 +57,20 @@ export default function ARResultScreen({
   const topCandidate = primary?.candidates[0] ?? null;
   const isLowConfidence =
     topCandidate == null || topCandidate.similarity < IDENTIFY_CONFIDENCE_THRESHOLD;
-  // 탐지 자체가 실패하면 영상 없이 안내 문구만 — 보여줄 제품이 없는데 스토리를 붙이면 거짓말이 된다.
+  // 탐지 자체가 실패하면 영상 없이 안내 문구만 보여준다.
   const story = primary != null ? getStory(primary.class) : null;
   const videoSource =
     primary != null
       ? getStoryVideo(primary.class, topCandidate?.productId ?? primary.class)
       : null;
 
-  // PanResponder의 콜백 클로저는 최초 렌더 시점에 한 번 고정되므로, COLLAPSED_Y를 직접
-  // 클로저에 담으면 인셋이 한 프레임 늦게 갱신되는 기기에서 stale 값을 계속 쓰게 된다.
-  // 매 렌더 갱신되는 ref로 우회한다.
+  // PanResponder 콜백 클로저는 최초 렌더 때 고정되므로 COLLAPSED_Y를 직접 담으면
+  // 인셋 갱신이 늦은 기기에서 stale 값을 쓴다. ref로 우회.
   const collapsedYRef = useRef(COLLAPSED_Y);
   collapsedYRef.current = COLLAPSED_Y;
 
   const translateY = useRef(new Animated.Value(COLLAPSED_Y)).current;
-  // 접혔을 때는 카드 배경이 반투명해서 뒤로 영상이 비치고, 위로 끌수록 또렷한 흰색이 된다.
-  // COLLAPSED_Y가 렌더마다 바뀔 수 있어 interpolate도 매 렌더 새로 만든다(가벼운 연산이라
-  // 메모이즈할 필요는 없다).
+  // 접혔을 때는 카드 배경이 반투명해서 뒤로 영상이 비치고, 위로 끌수록 흰색이 또렷해진다.
   const sheetBackdropOpacity = translateY.interpolate({
     inputRange: [0, COLLAPSED_Y],
     outputRange: [1, 0.32],
@@ -98,8 +91,7 @@ export default function ARResultScreen({
       },
       onPanResponderRelease: (_, gesture) => {
         const collapsedY = collapsedYRef.current;
-        // 드래그가 거의 없었으면(=탭) 현재 상태를 뒤집는다 — 접힌 핸들을 톡 누르면 펼쳐지고,
-        // 펼쳐진 핸들을 다시 누르면 접힌다.
+        // 드래그가 거의 없었으면(=탭) 현재 상태를 뒤집는다.
         const isTap = Math.abs(gesture.dy) < 6 && Math.abs(gesture.vy) < 0.1;
         const expand = isTap
           ? dragStartY.current > collapsedY / 2
@@ -160,9 +152,8 @@ export default function ARResultScreen({
 
   return (
     <View style={styles.container}>
-      {/* 전신 영상 화면이라 상태바도 그 위에 얹혀야 한다 — 다른 화면은 흰 배경이라
-          루트 레이아웃에서 style="dark"로 고정해두는데, 여기서만 잠깐 덮어쓴다.
-          화면을 벗어나면 루트의 dark 설정으로 자동 복귀한다(expo-status-bar 스택 동작). */}
+      {/* 전신 영상 화면이라 상태바도 밝게 — 다른 화면은 흰 배경이라 루트에서 dark로 고정해뒀는데
+          여기서만 덮어쓴다. 화면 벗어나면 자동 복귀. */}
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <Video
         source={videoSource}
@@ -170,9 +161,8 @@ export default function ARResultScreen({
         resizeMode="cover"
         repeat
         muted
-        // 기본 SurfaceView는 루프 지점마다 서페이스를 재할당하면서 검은 프레임이 잠깐
-        // 끼어드는 경우가 있다(영상이 짧을수록 루프가 잦아 더 눈에 띈다). TextureView는
-        // 일반 뷰 계층 안에서 그려져서 그 재할당이 없다 — 안드로이드 전용 설정.
+        // 기본 SurfaceView는 루프마다 서페이스를 재할당해서 검은 프레임이 잠깐 끼어든다.
+        // TextureView는 뷰 계층 안에서 그려져서 그게 없다(안드로이드 전용).
         viewType={ViewType.TEXTURE}
       />
       <View style={styles.scrim} pointerEvents="none" />
@@ -315,9 +305,8 @@ const styles = StyleSheet.create({
   },
   closeIconOnVideo: { fontSize: 17, color: "#fff" },
 
-  // 영상 위에 뜨는 바텀시트형 카드 패널. 처음엔 핸들만 보이게 접혀 있다가(SHEET_HEIGHT -
-  // PEEK_HEIGHT만큼 아래로 내려간 상태) 위로 끌면 펼쳐진다 — translateY로 위치를 옮기므로
-  // 높이는 고정값이어야 한다(퍼센트면 애니메이션 기준점이 안 맞는다).
+  // 영상 위 바텀시트형 카드 패널. 처음엔 핸들만 보이게 접혀 있다가 위로 끌면 펼쳐진다 —
+  // translateY로 위치를 옮기므로 높이는 고정값이어야 한다.
   sheet: {
     position: "absolute",
     left: 0,
@@ -327,8 +316,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.lg,
     overflow: "hidden",
   },
-  // sheet 자체가 아니라 이 레이어의 불투명도를 애니메이션한다 — 핸들/텍스트 등 내용물은
-  // 항상 또렷해야 하고, 배경만 접혔을 때 영상이 비치도록 흐려져야 하기 때문.
+  // sheet 자체가 아니라 이 레이어의 불투명도만 애니메이션한다 — 핸들/텍스트는 항상 또렷해야 한다.
   sheetBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "#fff",

@@ -13,10 +13,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// @AutoConfigureMockMvc is required here: AbstractIntegrationTest's bare @SpringBootTest does not
-// register a MockMvc bean on its own (see the same note in PassportControllerIntegrationTest).
-// The task-30 brief's verbatim test code omits this annotation, which fails with
-// NoSuchBeanDefinitionException for MockMvc; added narrowly to make the brief's test runnable.
+// AbstractIntegrationTest's bare @SpringBootTest doesn't register a MockMvc bean on its own,
+// so @AutoConfigureMockMvc is needed here (same story in PassportControllerIntegrationTest).
 @AutoConfigureMockMvc
 @Import(FakeImageStorageConfig.class)
 class EndToEndFlowTest extends AbstractIntegrationTest {
@@ -56,14 +54,9 @@ class EndToEndFlowTest extends AbstractIntegrationTest {
             .andReturn().getResponse().getContentAsString();
         long passportId = objectMapper.readTree(registerResponse).get("id").asLong();
 
-        // 4. 마모 진단 제출 (URGENT 등급이 나오도록 previous 없이 시작 — 규칙기반은 항상 GOOD로 시작하므로,
-        //    이 테스트에서는 등급과 무관하게 진단 자체가 성공하고 타임라인에 반영되는지만 확인한다)
-        // NOTE: deviates from the brief's verbatim diagnosisType MockMultipartFile part -- that
-        // form fails to bind (MethodArgumentConversionNotSupportedException) because
-        // DiagnosisController declares diagnosisType as @RequestParam, not @RequestPart (see
-        // Task's earlier fix, commit 86ba529, and DiagnosisControllerIntegrationTest's
-        // submitWithOrdinaryFormFieldDiagnosisTypeReturns201). Using .param(), the established
-        // working pattern, instead.
+        // 4. 마모 진단 제출 — previous 없이 시작하면 규칙기반 엔진이 항상 GOOD로 잡으므로
+        //    여기선 등급값보다 진단이 성공하고 타임라인에 반영되는지만 확인한다
+        // diagnosisType은 @RequestParam이라 파일 파트가 아니라 .param()으로 넘겨야 바인딩된다
         MockMultipartFile imagePart = new MockMultipartFile("images", "photo.jpg", "image/jpeg", "fake-image".getBytes());
         mockMvc.perform(multipart("/api/passports/" + passportId + "/diagnoses")
                 .file(imagePart)

@@ -8,12 +8,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 /**
  * One Postgres container shared by every integration test class in the whole JVM.
  *
- * The container is started from a static field, not from JUnit5's {@code @Container}/
- * {@code @Testcontainers} lifecycle: that combination re-triggered container creation once
- * per subclass of {@link AbstractIntegrationTest} (16 separate containers per full test run),
- * exhausting Docker and causing ~19 tests to intermittently fail on connection timeouts.
- * A static field is guaranteed by the JVM to initialize exactly once, so this is the actual
- * fix, not just a relabeling of the same mechanism.
+ * Started from a static field rather than JUnit5's {@code @Container}/{@code @Testcontainers}
+ * lifecycle, which spins up a separate container per subclass of {@link AbstractIntegrationTest}
+ * and can exhaust Docker on a full test run. A static field is guaranteed by the JVM to
+ * initialize exactly once.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {

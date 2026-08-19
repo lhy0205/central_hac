@@ -95,9 +95,9 @@ async def ocr(
     tmp_path = _save_upload_to_tempfile(file)
     try:
         _ensure_decodable(tmp_path)
-        # ocr_engine.run은 동기 블로킹 호출이라 그냥 await 없이 부르면 이 요청이 끝날 때까지
-        # 이벤트 루프 전체가 멎어서 /health를 포함한 다른 모든 요청도 같이 멈춘다(실제로
-        # 대용량 이미지 테스트 중 재현됨). 스레드로 분리해 이벤트 루프는 계속 돌게 한다.
+        # ocr_engine.run은 동기 블로킹 호출이라 await 없이 부르면 이 요청이 끝날 때까지
+        # 이벤트 루프 전체가 멎어서 /health를 포함한 다른 요청도 같이 멈춘다.
+        # 스레드로 분리해 이벤트 루프는 계속 돌게 한다.
         result = await asyncio.to_thread(ocr_engine.run, tmp_path, _engine)
     finally:
         os.unlink(tmp_path)

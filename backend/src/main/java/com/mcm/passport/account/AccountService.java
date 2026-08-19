@@ -86,10 +86,8 @@ public class AccountService {
     }
 
     public void confirmPasswordReset(ConfirmPasswordResetRequest request) {
-        // 같은 토큰으로 온 동시 요청이 둘 다 isUsable() 체크를 통과해버려서 토큰이 두 번 쓰이는
-        // 경합 상태를 막기 위해 행 잠금을 잡은 채로 조회한다(자세한 이유는
-        // PasswordResetTokenRepository.findByTokenForUpdate 참고). DB에는 해시만 있으므로 조회도
-        // 해시로 한다.
+        // 동시 요청으로 토큰이 두 번 쓰이지 않도록 행 잠금을 잡고 조회한다(자세한 이유는
+        // PasswordResetTokenRepository.findByTokenForUpdate 참고). DB에는 해시만 있으니 조회도 해시로.
         PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenForUpdate(hashToken(request.token()))
             .filter(t -> t.isUsable(LocalDateTime.now(clock)))
             .orElseThrow(() -> new ApiException(ErrorCode.RESET_TOKEN_INVALID));
@@ -131,8 +129,8 @@ public class AccountService {
     }
 
     public void withdraw(Long accountId) {
-        // 계정 행을 잠근 채로 읽어야 한다. 잠금 없이 진행하면 스냅샷 이후 승계된 여권이 캐스케이드
-        // 취소에서 빠져 탈퇴 계정 소유로 남는다. redeem()도 같은 행을 잠그므로 둘은 직렬화된다.
+        // 계정 행을 잠근 채로 읽는다. 안 그러면 그 사이 승계된 여권이 캐스케이드 취소에서 빠지고
+        // 탈퇴 계정 소유로 남는다. redeem()도 같은 행을 잠그므로 서로 직렬화된다.
         Account account = getActiveAccountOrThrowForUpdate(accountId);
         account.withdraw(LocalDateTime.now(clock));
         // 잠금 없이 읽고 삭제하면 그 사이 승계된 여권까지 지워진다(새 소유자의 여권이 조용히

@@ -19,10 +19,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// @AutoConfigureMockMvc follows the same pattern established by AccountControllerIntegrationTest
-//  / HealthEndpointSecurityTest: AbstractIntegrationTest's bare @SpringBootTest
-// does not register a MockMvc bean, and the real SecurityFilterChain (no addFilters=false) must
-// stay wired so this test actually exercises @RequestPart @Valid end-to-end.
+// AbstractIntegrationTest의 기본 @SpringBootTest는 MockMvc 빈을 안 만들어줘서 @AutoConfigureMockMvc가 필요.
+// @RequestPart @Valid를 실제로 태워야 하니 시큐리티 필터 체인도 addFilters=false 없이 그대로 둔다.
 @AutoConfigureMockMvc
 class PassportControllerIntegrationTest extends AbstractIntegrationTest {
 
@@ -87,8 +85,8 @@ class PassportControllerIntegrationTest extends AbstractIntegrationTest {
             .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
-    // 부분 유니크 인덱스 설계(소프트 삭제된 여권은 동일 시리얼+연도 재등록을 허용해야 함)에
-    // 대한 회귀 방지 테스트. 등록 -> 소프트 삭제(DELETE) -> 동일 시리얼+연도로 재등록 순으로 검증한다.
+    // 소프트 삭제된 여권은 동일 시리얼+연도 재등록을 허용해야 함 (부분 유니크 인덱스 설계).
+    // 등록 -> 소프트 삭제(DELETE) -> 동일 시리얼+연도로 재등록 순으로 확인.
     @Test
     void reRegistrationAllowedAfterSoftDelete() throws Exception {
         Account owner = accountRepository.save(

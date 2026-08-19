@@ -11,9 +11,9 @@ import java.util.List;
 public record CreateReservationRequest(
     @NotNull Long storeId,
     @NotNull @Future LocalDateTime slotDateTime,
-    // 리스트 자체의 @NotNull/@Size만으로는 원소가 null인 것까지는 막지 못한다 — 그러면
-    // ReservationService.create()의 requestItems().stream().map(Enum::name)에서 처리되지 않은
-    // NPE(500)가 나갔다. 원소별 @NotNull로 400에서 걸러낸다.
+    // 리스트 자체의 @NotNull/@Size만으로는 원소가 null인 건 못 막는다 — 그러면
+    // ReservationService.create()의 requestItems().stream().map(Enum::name)에서 NPE(500)가 난다.
+    // 원소별 @NotNull로 400에서 걸러낸다.
     @NotNull @Size(min = 1) List<@NotNull CareRequestItemType> requestItems
 ) {
 }

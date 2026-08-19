@@ -85,9 +85,7 @@ class NotificationServiceTest {
 
     @Test
     void listAppendsIdAsStableSortTiebreaker() {
-        // generateReminders()가 한 트랜잭션에서 같은 여권에 여러 알림을
-        // 만들면 created_at이 같을 수 있다 — PassportService.list()와 같은 방식으로 id 타이브레이커를
-        // 붙였는지 검증한다.
+        // created_at이 같을 수 있어서 PassportService.list()처럼 id 타이브레이커를 붙였는지 확인
         notificationService = newService();
         when(passportOwnershipGuard.getOwnedActivePassport(1L, 1L)).thenReturn(mock(Passport.class));
         org.springframework.data.domain.Pageable requested = org.springframework.data.domain.PageRequest.of(0, 20);
@@ -160,9 +158,8 @@ class NotificationServiceTest {
         Passport passport = passportWithPurchaseDate(LocalDate.of(2024, 1, 1)); // 기준일로부터 900일 이상 경과
         when(passportRepository.findAllByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
             .thenReturn(List.of(passport));
-        // 알림 생성 직전 재확인 — passport.getId()는 저장되지 않은
-        // 엔티티라 null이므로, "여전히 ACTIVE인 id 집합"에도 null을 넣어 이 여권이 필터링되지
-        // 않도록 시뮬레이션한다.
+        // 알림 생성 직전 재확인 — passport.getId()가 null이라 "여전히 ACTIVE인 id 집합"에도
+        // null을 넣어 이 여권이 필터링되지 않게 함
         when(passportRepository.findIdsByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
             .thenReturn(java.util.Arrays.asList((Long) null));
         when(notificationRepository.findPassportIdsByTypeAndCreatedAtAfter(eq(NotificationType.SELF_CARE), any()))
@@ -179,18 +176,15 @@ class NotificationServiceTest {
         Passport passport = passportWithPurchaseDate(LocalDate.of(2024, 1, 1));
         when(passportRepository.findAllByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
             .thenReturn(List.of(passport));
-        // 알림 생성 직전 재확인 — passport.getId()는 저장되지 않은
-        // 엔티티라 null이므로, "여전히 ACTIVE인 id 집합"에도 null을 넣어 이 여권이 필터링되지
-        // 않도록 시뮬레이션한다.
+        // 알림 생성 직전 재확인 — passport.getId()가 null이라 "여전히 ACTIVE인 id 집합"에도
+        // null을 넣어 이 여권이 필터링되지 않게 함
         when(passportRepository.findIdsByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
             .thenReturn(java.util.Arrays.asList((Long) null));
-        // passport.getId()는 저장되지 않은 엔티티라 null이다 — "이미 리마인드된 여권 id 집합"에
-        // null을 넣어 이 여권이 그 집합에 포함된 상황을 시뮬레이션한다.
+        // passport.getId()가 null이라 "이미 리마인드된 id 집합"에도 null을 넣어 포함된 상황을 만듦
         when(notificationRepository.findPassportIdsByTypeAndCreatedAtAfter(eq(NotificationType.SELF_CARE), any()))
             .thenReturn(java.util.Arrays.asList((Long) null));
-        // 구매일로부터 900일 이상 경과했으므로 100일/365일 마일스톤은 이미 지났다 — 둘 다 이미
-        // 보낸 것으로 시뮬레이션해 마일스톤 알림이 새로 생기지 않게 한다(이 테스트는 재진단
-        // 리마인더 쿨다운만 검증한다).
+        // 100일/365일 마일스톤은 이미 지났으니 둘 다 보낸 것으로 처리 — 이 테스트는 재진단
+        // 리마인더 쿨다운만 봄
         when(notificationRepository.findAllByPassportIdInAndType(any(), eq(NotificationType.MILESTONE)))
             .thenReturn(List.of(
                 new Notification(null, NotificationType.MILESTONE, Map.of("소유일수", 100), "100일째 함께하고 있어요!", null),
@@ -203,15 +197,13 @@ class NotificationServiceTest {
 
     @Test
     void generateRemindersCatchesUpAMissedMilestoneEvenWhenOwnershipDayIsNotExactlyOnIt() {
-        // 스케줄러가 정확히 100일째에 못 돌았어도(장애/재배포), 105일째에라도 그 마일스톤을
-        // 놓치지 않고 따라잡아 보내야 한다 — exact-day 비교였을 때는 이 경우를 영영 놓쳤다.
+        // 스케줄러가 정확히 100일째를 놓쳐도(장애/재배포) 105일째처럼 그 마일스톤을 따라잡아 보내야 함
         notificationService = newService();
         Passport passport = passportWithPurchaseDate(LocalDate.of(2026, 8, 5).minusDays(105));
         when(passportRepository.findAllByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
             .thenReturn(List.of(passport));
-        // 알림 생성 직전 재확인 — passport.getId()는 저장되지 않은
-        // 엔티티라 null이므로, "여전히 ACTIVE인 id 집합"에도 null을 넣어 이 여권이 필터링되지
-        // 않도록 시뮬레이션한다.
+        // 알림 생성 직전 재확인 — passport.getId()가 null이라 "여전히 ACTIVE인 id 집합"에도
+        // null을 넣어 이 여권이 필터링되지 않게 함
         when(passportRepository.findIdsByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
             .thenReturn(java.util.Arrays.asList((Long) null));
         when(notificationRepository.findPassportIdsByTypeAndCreatedAtAfter(eq(NotificationType.SELF_CARE), any()))
@@ -227,11 +219,8 @@ class NotificationServiceTest {
 
     @Test
     void generateRemindersStillSendsLaterMilestoneWhenAnEarlierOneWasDuplicated() {
-        // 과거에는 "보낸 개수"만 셌기 때문에, 어떤 이유로든(예: ShedLock
-        // lockAtMostFor 만료로 겹쳐 도는 경우) 100일 마일스톤 알림이 중복으로 두 번 생성되면
-        // milestonesSent가 실제로 지나친 마일스톤 수(1)보다 커져서, 그 다음 365일 마일스톤이 영구히
-        // 스킵됐다. 값 자체(소유일수)로 비교하도록 고친 뒤에는 중복이 있어도 365일 마일스톤이
-        // 정상적으로 나가야 한다.
+        // 100일 마일스톤이 중복 생성돼도(예: ShedLock lockAtMostFor 만료로 겹쳐 도는 경우)
+        // "보낸 개수"가 아니라 값(소유일수)으로 비교해야 365일 마일스톤이 정상적으로 나감
         notificationService = newService();
         Passport passport = passportWithPurchaseDate(LocalDate.of(2026, 8, 5).minusDays(400)); // 100/365일 모두 경과
         when(passportRepository.findAllByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
@@ -240,8 +229,8 @@ class NotificationServiceTest {
             .thenReturn(java.util.Arrays.asList((Long) null));
         when(notificationRepository.findPassportIdsByTypeAndCreatedAtAfter(eq(NotificationType.SELF_CARE), any()))
             .thenReturn(List.of());
-        // 100일 마일스톤만 중복으로 두 번 생성된 상황을 시뮬레이션한다 — "개수" 기준이면 2개로 세어져
-        // 365일 마일스톤(3번째로 지나친 것 중 2번째)까지 이미 보낸 것으로 잘못 취급된다.
+        // 100일 마일스톤만 중복 두 번 생성된 상황 — "개수" 기준이면 365일 마일스톤까지
+        // 이미 보낸 것으로 잘못 취급됨
         when(notificationRepository.findAllByPassportIdInAndType(any(), eq(NotificationType.MILESTONE)))
             .thenReturn(List.of(
                 new Notification(null, NotificationType.MILESTONE, Map.of("소유일수", 100), "100일째 함께하고 있어요!", null),
@@ -257,8 +246,7 @@ class NotificationServiceTest {
 
     @Test
     void generateRemindersSkipsPassportThatWasDeletedAfterTheInitialSnapshot() {
-        // activePassports 스냅샷 이후 이 여권이 동시에 삭제되면, 재확인
-        // 없이는 이미 접근 불가능해진 여권에도 알림이 생성된다.
+        // 스냅샷 이후 여권이 삭제되면 재확인 없이는 접근 불가능한 여권에도 알림이 생성됨
         notificationService = newService();
         Passport passport = passportWithPurchaseDate(LocalDate.of(2024, 1, 1)); // 900일 이상 경과 → 리마인더 대상
         when(passportRepository.findAllByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
@@ -292,18 +280,16 @@ class NotificationServiceTest {
     void generateRemindersSkipsWhenCareAlertsDisabled() {
         notificationService = newService();
         Passport passport = passportWithPurchaseDate(LocalDate.of(2024, 1, 1));
-        // generateReminders()는 계정을 배치 조회(findAllById)한 뒤 Account::getId로 맵을 만든다
-        // — Account는 protected no-args 생성자뿐이라 id를 실제로
-        // 세팅할 수 없으므로, getId()/isCareAlertsEnabled()를 목으로 스텁한다.
+        // findAllById로 배치 조회 후 Account::getId로 맵을 만드는데, Account는 protected 생성자뿐이라
+        // id를 못 채우니 getId()/isCareAlertsEnabled()를 목으로 스텁
         com.mcm.passport.account.Account ownerAccount = mock(com.mcm.passport.account.Account.class);
         when(ownerAccount.getId()).thenReturn(1L);
         when(ownerAccount.isCareAlertsEnabled()).thenReturn(false);
         when(accountRepository.findAllById(List.of(1L))).thenReturn(List.of(ownerAccount));
         when(passportRepository.findAllByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
             .thenReturn(List.of(passport));
-        // 알림 생성 직전 재확인 — passport.getId()는 저장되지 않은
-        // 엔티티라 null이므로, "여전히 ACTIVE인 id 집합"에도 null을 넣어 이 여권이 필터링되지
-        // 않도록 시뮬레이션한다.
+        // 알림 생성 직전 재확인 — passport.getId()가 null이라 "여전히 ACTIVE인 id 집합"에도
+        // null을 넣어 이 여권이 필터링되지 않게 함
         when(passportRepository.findIdsByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
             .thenReturn(java.util.Arrays.asList((Long) null));
 
@@ -314,15 +300,13 @@ class NotificationServiceTest {
 
     @Test
     void generateRemindersBatchLoadsCareAlertsPreferenceInsteadOfPerPassport() {
-        // passport마다 accountRepository.findById를
-        // 한 번씩 불렀다 — findAllById로 한 번만 불러야 한다.
+        // passport마다 findById를 따로 부르지 않고 findAllById로 한 번에 불러야 함
         notificationService = newService();
         Passport passport = passportWithPurchaseDate(LocalDate.of(2024, 1, 1));
         when(passportRepository.findAllByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
             .thenReturn(List.of(passport));
-        // 알림 생성 직전 재확인 — passport.getId()는 저장되지 않은
-        // 엔티티라 null이므로, "여전히 ACTIVE인 id 집합"에도 null을 넣어 이 여권이 필터링되지
-        // 않도록 시뮬레이션한다.
+        // 알림 생성 직전 재확인 — passport.getId()가 null이라 "여전히 ACTIVE인 id 집합"에도
+        // null을 넣어 이 여권이 필터링되지 않게 함
         when(passportRepository.findIdsByStatus(com.mcm.passport.passport.PassportStatus.ACTIVE))
             .thenReturn(java.util.Arrays.asList((Long) null));
         when(notificationRepository.findPassportIdsByTypeAndCreatedAtAfter(eq(NotificationType.SELF_CARE), any()))
@@ -343,9 +327,8 @@ class NotificationServiceTest {
     }
 
     // --- FR-NOT-03 / FR-NOT-06: 재구매 제안 ---
-    //
-    // Care-First 원칙에 따라 "장기 소유 + 반복 D등급" 두 조건이 모두 맞을 때만 만들어야 한다.
-    // 하나만 맞아서 새는 경우가 없는지를 아래 세 테스트가 각각 막는다.
+    // Care-First 원칙상 "장기 소유 + 반복 D등급" 둘 다 맞을 때만 만들어야 함.
+    // 하나만 맞아서 새는 케이스가 없는지 아래 세 테스트로 확인.
 
     @Test
     void longOwnershipWithRepeatedUrgentCreatesRepurchaseNotification() {
@@ -363,9 +346,9 @@ class NotificationServiceTest {
     @Test
     void repeatedUrgentOnRecentPurchaseDoesNotCreateRepurchaseNotification() {
         notificationService = newService();
-        // 산 지 얼마 안 된 제품은 아무리 상태가 나빠도 케어로 안내해야 한다(수선 우선).
-        // 진단 이력을 stub하지 않는 것은 의도적이다 — 소유기간에서 먼저 걸러지므로 진단
-        // 조회까지 가면 안 된다(스텁을 넣으면 Mockito가 미사용으로 잡아 이 순서가 깨졌음을 알려준다).
+        // 산 지 얼마 안 된 제품은 상태가 나빠도 케어로 안내해야 함(수선 우선).
+        // 진단 이력을 stub 안 하는 건 의도적 — 소유기간에서 먼저 걸러져야 하므로 조회까지 가면 안 됨
+        // (스텁 넣으면 Mockito가 미사용으로 잡아줌)
         Passport passport = passportWithPurchaseDate(LocalDate.of(2026, 1, 1));
         Diagnosis urgent = diagnosisWithGrade(OverallGrade.D);
 

@@ -12,10 +12,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// @AutoConfigureMockMvc added (not in task-7-brief's verbatim snippet): AbstractIntegrationTest's
-// bare @SpringBootTest does not register a MockMvc bean on its own. HealthEndpointSecurityTest
-// establishes this pattern for integration tests that need MockMvc against the
-// real SecurityFilterChain; followed here rather than inventing a new approach.
+// AbstractIntegrationTest's bare @SpringBootTest doesn't register a MockMvc bean on its own,
+// so @AutoConfigureMockMvc is needed to test against the real SecurityFilterChain
+// (same pattern as HealthEndpointSecurityTest).
 @AutoConfigureMockMvc
 class AccountControllerIntegrationTest extends AbstractIntegrationTest {
 

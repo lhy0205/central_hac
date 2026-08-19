@@ -13,9 +13,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// @AutoConfigureMockMvc + @Import(FakeImageStorageConfig.class) follow the same pattern as
-// EndToEndFlowTest: AbstractIntegrationTest's bare @SpringBootTest does not register a
-// MockMvc bean, and passport registration needs a fake image storage bean wired in test.
+// AbstractIntegrationTest의 기본 @SpringBootTest는 MockMvc 빈을 안 만들어줘서 @AutoConfigureMockMvc가 필요.
+// 여권 등록 과정에서 이미지 스토리지가 필요해서 FakeImageStorageConfig도 같이 임포트.
 @AutoConfigureMockMvc
 @Import(FakeImageStorageConfig.class)
 class TransferControllerIntegrationTest extends AbstractIntegrationTest {

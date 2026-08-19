@@ -32,10 +32,8 @@ class PassportRepositoryTest extends AbstractIntegrationTest {
 
     @Test
     void duplicateActiveSerialDifferingOnlyByCaseIsRejectedByDbConstraint() {
-        // 앱 레벨 정규화(PassportService.register())를 우회하는 경로
-        // (예: 이 테스트처럼 리포지토리를 직접 쓰는 경우)에서도 대소문자만 다른 시리얼은 같은
-        // 실물 가방으로 취급돼야 한다 — V13 마이그레이션이 인덱스 자체를 UPPER(serial_number)
-        // 기준으로 걸었으므로 앱 레벨 정규화 없이도 DB가 막아야 한다.
+        // 리포지토리를 직접 써서 앱 레벨 정규화를 우회해도 대소문자만 다른 시리얼은 막혀야 함 —
+        // V13 마이그레이션이 인덱스를 UPPER(serial_number) 기준으로 걸어서 DB 차원에서 방어됨
         Account owner = accountRepository.save(new Account("d@example.com", "hash", "닉네임"));
         passportRepository.saveAndFlush(newPassport(owner.getId(), "d3333", 2022));
 

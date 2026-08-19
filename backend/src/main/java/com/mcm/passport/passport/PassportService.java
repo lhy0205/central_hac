@@ -41,9 +41,8 @@ public class PassportService {
     private final java.time.Clock clock;
 
     // 업로드는 Cloudinary로의 외부 HTTP 호출이라 DB 커넥션을 쥔 채로 기다리면 커넥션 풀을
-    // 불필요하게 오래 점유한다. 클래스 레벨 @Transactional을 이 메서드에서만 걷어내
-    // (Spring Data 리포지토리 메서드는 각자 자체 트랜잭션을 가지므로 원자성은 그대로 유지된다),
-    // 업로드가 끝난 뒤에야 DB 트랜잭션이 시작되도록 한다.
+    // 불필요하게 오래 점유한다. 이 메서드만 클래스 레벨 @Transactional을 걷어내서 업로드가
+    // 끝난 뒤에야 DB 트랜잭션이 시작되게 한다(리포지토리 메서드는 각자 트랜잭션을 가지니 원자성은 유지).
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PassportResponse register(Long ownerAccountId, RegisterPassportRequest request,
                                       MultipartFile receiptImage, List<MultipartFile> baselineImages) {
@@ -72,22 +71,21 @@ public class PassportService {
             receiptImageUrl, receiptImageUrl != null, baselineImageUrls, request.usageFrequency());
 
         try {
-            // 업로드(외부 HTTP 호출)가 오래 걸리는 동안 계정이 탈퇴했을 수 있으므로 저장 직전에
-            // 다시 확인한다 — 시작할 때 한 번만 확인하면 그 사이 탈퇴한 계정도 등록에 성공해버린다.
-            // 이 재확인도 try 블록 안에 있어야, 재확인이 던지는 예외도 아래 catch의 고아 이미지
-            // 정리를 거친다.
+            // 업로드가 오래 걸리는 동안 계정이 탈퇴했을 수 있어 저장 직전에 다시 확인한다 — 시작할
+            // 때 한 번만 확인하면 그 사이 탈퇴한 계정도 등록에 성공해버린다. try 안에 둬야 이 재확인이
+            // 던지는 예외도 아래 catch의 고아 이미지 정리를 탄다.
             accountService.getActiveAccountOrThrow(ownerAccountId);
             return PassportResponse.from(passportRepository.save(passport));
         } catch (DataIntegrityViolationException e) {
-            // 사전 존재여부 체크와 실제 저장 사이의 경합 상태를 대비한 DB 레벨 안전망 — 이미 업로드된
-            // 이미지는 이제 어떤 여권에도 연결되지 못하는 고아가 되므로 베스트에포트로 정리한다
-            // (정리 실패는 로그만 남기고 원래 SERIAL_ALREADY_REGISTERED 예외를 가리지 않는다).
+            // 사전 존재여부 체크와 실제 저장 사이의 경합을 대비한 DB 레벨 안전망 — 이미 업로드된
+            // 이미지는 고아가 되므로 베스트에포트로 정리한다(정리 실패는 로그만 남기고 원래
+            // SERIAL_ALREADY_REGISTERED 예외를 가리지 않는다).
             cleanupUploadedImages(receiptImageUrl, baselineImageUrls);
             throw new ApiException(ErrorCode.SERIAL_ALREADY_REGISTERED);
         } catch (RuntimeException e) {
-            // DiagnosisService.submit()/CareRecordService.create()와 같은 이유로, 위 DataIntegrityViolationException
-            // 외의 어떤 RuntimeException(재확인이 던지는 ApiException 포함)에도 동일하게 고아 이미지를
-            // 정리해야 한다 — 이전에는 이 catch가 없어서 형제 서비스들과 동작이 갈렸다.
+            // DiagnosisService.submit()/CareRecordService.create()와 같은 이유로, 위
+            // DataIntegrityViolationException 외의 RuntimeException(재확인이 던지는 ApiException
+            // 포함)에도 똑같이 고아 이미지를 정리해야 한다.
             cleanupUploadedImages(receiptImageUrl, baselineImageUrls);
             throw e;
         }
@@ -141,10 +139,9 @@ public class PassportService {
     }
 
     public void delete(Long passportId, Long requesterAccountId) {
-        // 잠금 없는 조회로 여권을 읽은 뒤 그대로 softDelete하면, 이 트랜잭션이 커밋되기 전에 다른
-        // 트랜잭션(예: 승계 코드 redeem)이 먼저 소유권을 다른 계정으로 옮기고 커밋해도 이 트랜잭션은
-        // 그 사실을 모른 채 그대로 DELETED 처리해버릴 수 있다(새 소유자의 여권이 조용히 사라짐).
-        // AccountService.withdraw()가 이미 겪은 것과 동일한 경합이라 같은 잠금 조회로 막는다.
+        // 잠금 없이 읽고 softDelete하면, 그 사이 승계 코드 redeem이 먼저 소유권을 옮기고 커밋해도
+        // 이 트랜잭션은 모른 채 DELETED 처리해버릴 수 있다(새 소유자 여권이 조용히 사라짐).
+        // AccountService.withdraw()와 같은 경합이라 같은 잠금 조회로 막는다.
         Passport passport = passportOwnershipGuard.getOwnedActivePassportForUpdate(passportId, requesterAccountId);
         passport.softDelete();
         reservationRepository.cancelAllRequestedForPassport(passportId);

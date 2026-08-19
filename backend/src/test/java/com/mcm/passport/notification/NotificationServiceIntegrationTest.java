@@ -15,10 +15,9 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// 회귀 방지 테스트: NotificationService에 @Transactional이 없으면 markRead/markDismiss가
-// notificationRepository.findById로 가져온 엔티티를 변경해도 (명시적 save() 호출이 없으므로)
-// 트랜잭션이 없어 변경사항이 DB에 반영되지 않는 채로 조용히 유실된다. Mockito 단위 테스트로는
-// 트랜잭션 의미론을 검증할 수 없으므로 실제 DB(Testcontainers)를 사용하는 통합 테스트로 확인한다.
+// @Transactional이 없으면 markRead/markDismiss가 findById로 가져온 엔티티를 바꿔도 명시적
+// save() 호출이 없어 DB에 반영 안 될 수 있다. 트랜잭션 의미론은 Mockito로는 검증이 안 되니
+// 실제 DB(Testcontainers)로 확인.
 class NotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired

@@ -26,14 +26,13 @@ const EVENT_TYPE_MAP: Record<string, "MOMENT" | "STORE_VISIT" | "SELF_CARE" | "O
   기타: "OTHER",
 };
 
-// Date.toISOString()은 UTC로 변환하므로 UTC보다 앞선 시간대(KST 등)에서는 자정~시차만큼의
-// 구간 동안 실제 로컬 날짜보다 하루 이른 값이 나온다 — 로컬 필드를 직접 조합해서 피한다.
+// Date.toISOString()은 UTC로 변환하므로 KST 등 UTC보다 앞선 시간대에서는 실제 로컬 날짜보다
+// 하루 이른 값이 나올 수 있다 — 로컬 필드를 직접 조합해서 피한다.
 function isoDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
-// 선택한 날짜에 "지금" 시각을 붙인다. 예전엔 무조건 T00:00:00을 붙였는데, 그러면 같은 날
-// 나중에 만들어진 다른 기록(진단·케어 등, 실제 생성 시각을 쓴다)보다 항상 타임라인에서
-// 앞에 온다 — 오늘 날짜를 고른 게 대부분이라 이 자정 고정이 순서를 자주 깨뜨렸다.
+// 선택한 날짜에 "지금" 시각을 붙인다. T00:00:00으로 고정하면 같은 날 실제 생성 시각을 쓰는
+// 다른 기록(진단·케어 등)보다 항상 타임라인에서 앞에 와버린다.
 function isoDateTime(dateStr: string) {
   const now = new Date();
   const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
@@ -98,7 +97,7 @@ export default function Add() {
     if (fileError) return Alert.alert("파일 확인", fileError);
     setSaving(true);
     try {
-      // 백엔드 eventDate는 LocalDateTime이라 날짜만 있는 문자열("2026-08-14")은 파싱에 실패한다(400) — 시각을 붙여 보낸다.
+      // 백엔드 eventDate는 LocalDateTime이라 날짜만 있는 문자열은 파싱에 실패한다(400) — 시각을 붙여 보낸다.
       await journeyApi.create(
         id,
         {

@@ -20,11 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// 회귀 방지 테스트: TransferService에 @Transactional이 없으면 issueCode()가
-// transferCodeRepository.findAllByPassportIdAndStatus로 가져온 엔티티를 expire()로 변경해도
-// (명시적 save() 호출이 없으므로) 트랜잭션이 없어 변경사항이 DB에 반영되지 않는 채로 조용히
-// 유실된다. Mockito 단위 테스트로는 트랜잭션 의미론을 검증할 수 없으므로 실제 DB(Testcontainers)를
-// 사용하는 통합 테스트로 확인한다.
+// @Transactional이 없으면 issueCode()가 expire()로 바꾼 엔티티도 명시적 save() 없이는 DB에
+// 반영이 안 될 수 있다. 트랜잭션 의미론은 Mockito로는 검증이 안 되니 실제 DB(Testcontainers)로 확인.
 class TransferServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -50,12 +47,10 @@ class TransferServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(reloaded.getStatus()).isEqualTo(TransferStatus.EXPIRED);
     }
 
-    // 회귀 방지 테스트: redeem()이 여권 행을 잠그지 않고 코드를 조회하면, 두 개의 동시 요청이
-    // 둘 다 ISSUED 상태를 통과해버려서 같은 코드가 두 번 redeem되고(둘 다 200 응답), 나중에 커밋한
-    // 쪽만 실제로 소유권을 갖게 되는 경합 상태가 생긴다. findByIdAndStatusForUpdate(PESSIMISTIC_WRITE)로
-    // 여권 행을 잠그면(issueCode()와 동일한 순서) 두 번째 트랜잭션이 첫 번째가 커밋할 때까지 블록되고,
-    // 커밋 후 REDEEMED 상태를 다시 읽어 정상적으로 거부된다. Mockito 단위 테스트로는 실제 행 잠금/
-    // 트랜잭션 순서를 검증할 수 없으므로 실제 DB(Testcontainers)와 스레드 두 개로 확인한다.
+    // redeem()이 여권 행을 안 잠그면 동시 요청 둘 다 ISSUED 상태를 통과해서 같은 코드가 두 번
+    // redeem될 수 있다. findByIdAndStatusForUpdate로 잠그면 두 번째 트랜잭션이 첫 번째 커밋을 기다렸다가
+    // REDEEMED를 다시 읽고 정상 거부된다. 실제 잠금/트랜잭션 순서는 Mockito로 검증 안 되니 DB와
+    // 스레드 두 개로 확인.
     @Test
     void redeemUnderConcurrentRequestsOnlyOneSucceeds() throws Exception {
         Account issuer = accountRepository.save(new Account("transfer-issuer@example.com", "hash", "발급자"));
@@ -95,11 +90,9 @@ class TransferServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(reloadedPassport.getOwnerAccountId()).isEqualTo(reloaded.getRedeemedByAccountId());
     }
 
-    // 회귀 방지 테스트: issueCode()가 findByIdAndStatus(잠금 없음)로 여권을 조회하면, 같은 여권에 대한
-    // 동시 발급 요청 둘 다 "기존 ISSUED 코드 만료 → 새 코드 생성"을 통과해버려서 서로 다른 두 코드가
-    // 동시에 ISSUED 상태로 남는 경합 상태가 생긴다(둘 다 나중에 서로 다른 사람에게 redeem되면 소유권이
-    // 꼬인다). findByIdAndStatusForUpdate(PESSIMISTIC_WRITE)로 여권 행을 잠그면 두 번째 요청은 첫 번째가
-    // 커밋할 때까지 블록되고, 커밋 후에는 방금 만료 처리된 코드를 다시 읽어 정상적으로 직렬화된다.
+    // issueCode()가 여권을 잠금 없이 조회하면 동시 발급 요청 둘 다 "기존 코드 만료 → 새 코드 생성"을
+    // 통과해서 ISSUED 코드가 두 개 남을 수 있다(나중에 서로 다른 사람에게 redeem되면 소유권이 꼬임).
+    // findByIdAndStatusForUpdate로 잠그면 두 번째 요청이 첫 번째 커밋을 기다렸다가 직렬화된다.
     @Test
     void issueCodeUnderConcurrentRequestsLeavesExactlyOneIssuedCode() throws Exception {
         Account owner = accountRepository.save(new Account("transfer-owner2@example.com", "hash", "닉네임"));
@@ -127,14 +120,10 @@ class TransferServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(issued).hasSize(1);
     }
 
-    // 회귀 방지 테스트: issueCode()는 여권 행을 먼저 잠그고 나중에 TransferCode 행을 건드리는데,
-    // 이전 버전의 redeem()은 반대로 TransferCode 행을 먼저 잠그고 나중에 여권 행을 건드렸다(잠금
-    // 순서 반전). 소유자가 issueCode()를 호출하는 동안 다른 사람이 같은 여권의 발급된 코드를
-    // redeem()하면, Postgres가 순환 대기(교착상태)를 감지해 한쪽 트랜잭션을 강제로 중단시키고, 이
-    // 예외는 어디서도 잡히지 않아 GlobalExceptionHandler의 최후 안전망을 타고 500으로 새어나간다.
-    // redeem()도 issueCode()와 같은 순서(여권 행 먼저)로 잠그도록 고친 뒤에는 두 작업이 항상
-    // 정상적으로 직렬화되고 어느 쪽도 예외 없이 끝나야 한다. 단일 스레드/Mockito로는 실제 잠금
-    // 순서(교착상태 여부)를 검증할 수 없으므로 실제 DB와 스레드 두 개로 확인한다.
+    // issueCode()와 redeem()이 여권 행/TransferCode 행을 잠그는 순서가 어긋나면 동시 실행 시
+    // Postgres가 교착상태로 판단해 한쪽 트랜잭션을 강제 중단시키고 500으로 새어나갈 수 있다.
+    // 두 메서드가 같은 순서(여권 행 먼저)로 잠가야 항상 정상 직렬화된다. 실제 잠금 순서는
+    // 단일 스레드/Mockito로는 검증 안 되니 DB와 스레드 두 개로 확인.
     @Test
     void issueCodeAndRedeemDoNotDeadlockOnConcurrentRequests() throws Exception {
         Account owner = accountRepository.save(new Account("transfer-owner3@example.com", "hash", "닉네임"));

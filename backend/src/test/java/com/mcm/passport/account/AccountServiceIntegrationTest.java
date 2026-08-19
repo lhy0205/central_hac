@@ -26,12 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// 회귀 방지 테스트: confirmPasswordReset()이 findByToken(잠금 없음)으로 토큰을 조회하면, 같은
-// 토큰에 대한 동시 요청 둘 다 isUsable() 체크를 통과해버려서 토큰의 1회용 불변식이 깨지고 비밀번호가
-// 두 번(서로 다른 값으로) 바뀔 수 있다. findByTokenForUpdate(PESSIMISTIC_WRITE)로 바꾸면 두 번째
-// 트랜잭션이 첫 번째가 커밋할 때까지 블록되고, 커밋 후 usedAt이 채워진 상태를 다시 읽어 정상적으로
-// 거부된다. Mockito 단위 테스트로는 실제 행 잠금/트랜잭션 순서를 검증할 수 없으므로 실제 DB
-// (Testcontainers)와 스레드 두 개로 확인한다.
+// findByToken은 잠금이 없어서 같은 토큰에 대한 동시 요청 둘 다 isUsable() 체크를 통과해버릴 수 있다.
+// findByTokenForUpdate(PESSIMISTIC_WRITE)로 잠가야 두 번째 트랜잭션이 첫 번째 커밋을 기다렸다가
+// usedAt이 채워진 걸 보고 제대로 거부된다. 행 잠금 순서는 Mockito로는 검증이 안 되니
+// Testcontainers + 스레드 두 개로 직접 확인.
 class AccountServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -84,13 +82,10 @@ class AccountServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(matchesA ^ matchesB).isTrue(); // 둘 중 정확히 하나만 반영되어야 한다
     }
 
-    // 회귀 방지 테스트: withdraw()가 소유 여권을 잠금 없이 읽고 그대로 softDelete하면, redeem()이
-    // 먼저 소유권을 다른 계정으로 옮기고 커밋해도 withdraw()는 그 사실을 모른 채 id 기준으로 그대로
-    // DELETED 처리해버려서 새 소유자의 여권이 조용히 사라진다. findByIdAndStatusForUpdate로 재조회 +
-    // 소유권 재확인하도록 고친 뒤에는, 잠금을 먼저 얻어 커밋한 쪽이 이기고 나머지는 최신 상태를
-    // 반영해 올바르게 동작해야 한다(redeem이 이겼다면 여권이 그대로 ACTIVE로 남아야 하고, withdraw가
-    // 이겼다면 redeem은 PASSPORT_NOT_FOUND로 거부되어야 한다). 실제 행 잠금/트랜잭션 순서는
-    // Mockito로 검증할 수 없으므로 실제 DB(Testcontainers)와 스레드 두 개로 확인한다.
+    // withdraw()가 소유 여권을 잠금 없이 읽고 지우면, 그 사이 redeem()이 소유권을 옮겨도 모르고
+    // 새 주인의 여권을 조용히 삭제해버릴 수 있다. findByIdAndStatusForUpdate로 재조회 + 소유권
+    // 재확인하게 고치면, 먼저 잠금을 얻어 커밋한 쪽이 이기고 나머지는 최신 상태를 보고 정상 처리된다.
+    // 행 잠금 순서는 Mockito로는 못 잡아서 Testcontainers + 스레드 두 개로 확인.
     @Test
     void withdrawAndRedeemDoNotRaceOnTheSamePassport() throws Exception {
         Account owner = accountRepository.save(
@@ -139,26 +134,21 @@ class AccountServiceIntegrationTest extends AbstractIntegrationTest {
 
         Passport reloaded = passportRepository.findById(passport.getId()).orElseThrow();
         if (redeemSucceeded.get() == 1) {
-            // redeem이 이겼다: 새 소유자 소유로 여전히 ACTIVE여야 하고, withdraw는 이 여권을
-            // 건드리지 않았어야 한다 (조용히 사라지면 안 됨).
+            // redeem이 이겼다: 새 소유자 것으로 ACTIVE 유지, withdraw는 이 여권을 건드리면 안 된다.
             assertThat(redeemRejected.get()).isZero();
             assertThat(reloaded.getStatus()).isEqualTo(PassportStatus.ACTIVE);
             assertThat(reloaded.getOwnerAccountId()).isEqualTo(redeemer.getId());
         } else {
-            // withdraw가 이겼다: 여권은 삭제되고, redeem은 정상적으로 거부되어야 한다.
+            // withdraw가 이겼다: 여권은 삭제되고 redeem은 거부되어야 한다.
             assertThat(redeemRejected.get()).isEqualTo(1);
             assertThat(reloaded.getStatus()).isEqualTo(PassportStatus.DELETED);
         }
     }
 
-    // 회귀 방지 테스트: withdrawAndRedeemDoNotRaceOnTheSamePassport()의 반대 방향. withdraw(X)가
-    // 소유 여권 스냅샷을 잠금 없이 뜬 뒤 그대로 캐스케이드 취소하면, 그 스냅샷 이후 redeem()이
-    // 다른 계정(Y) 소유의 여권을 X로 승계·커밋해도 withdraw()는 그 여권의 존재를 몰라 취소 대상에서
-    // 빠뜨린다 — 결과적으로 "탈퇴 계정이 소유한 ACTIVE 여권"이 영구히 남는다. withdraw()가 Account
-    // 행을 잠그고, redeem()이 소유권 이전 직전에 같은 행을 잠그고 재확인하도록 고친 뒤에는, 잠금을
-    // 먼저 얻어 커밋한 쪽이 이기고 나머지는 최신 상태를 반영해 올바르게 동작해야 한다(redeem이
-    // 이겼다면 withdraw의 캐스케이드가 그 여권까지 포함해 DELETED 처리해야 하고, withdraw가
-    // 이겼다면 redeem은 ACCOUNT_NOT_FOUND로 거부되어 여권이 원래 소유자(Y)에게 그대로 남아야 한다).
+    // 위 테스트의 반대 방향. withdraw(X)가 소유 여권 스냅샷을 잠금 없이 뜬 뒤 캐스케이드 취소하면,
+    // 그 사이 redeem()이 다른 계정(Y) 여권을 X로 넘겨도 몰라서 빠뜨리고, 탈퇴 계정 소유의 ACTIVE
+    // 여권이 영구히 남을 수 있다. withdraw()가 Account 행을 잠그고 redeem()도 소유권 이전 직전에
+    // 같은 행을 잠그고 재확인하게 고치면, 먼저 커밋한 쪽이 이기고 나머지는 최신 상태를 보고 처리된다.
     @Test
     void withdrawDoesNotLosePassportRedeemedInDuringWithdrawal() throws Exception {
         Account withdrawingAccount = accountRepository.save(
@@ -207,13 +197,13 @@ class AccountServiceIntegrationTest extends AbstractIntegrationTest {
 
         Passport reloaded = passportRepository.findById(passport.getId()).orElseThrow();
         if (redeemSucceeded.get() == 1) {
-            // redeem이 이겼다: withdraw()의 캐스케이드가 (redeem 커밋 이후 새로 잡은 스냅샷에서) 이
-            // 여권도 발견해 DELETED 처리했어야 한다 — 탈퇴 계정 소유로 ACTIVE인 채 남으면 안 된다.
+            // redeem이 이겼다: withdraw 캐스케이드가 이 여권도 새로 잡아서 DELETED 처리해야 한다
+            // (탈퇴 계정 소유로 ACTIVE인 채 남으면 안 됨).
             assertThat(redeemRejected.get()).isZero();
             assertThat(reloaded.getOwnerAccountId()).isEqualTo(withdrawingAccount.getId());
             assertThat(reloaded.getStatus()).isEqualTo(PassportStatus.DELETED);
         } else {
-            // withdraw가 이겼다: redeem은 거부되고, 여권은 원래 소유자에게 그대로 ACTIVE로 남아야 한다.
+            // withdraw가 이겼다: redeem은 거부되고, 여권은 원래 소유자에게 ACTIVE로 남아야 한다.
             assertThat(redeemRejected.get()).isEqualTo(1);
             assertThat(reloaded.getOwnerAccountId()).isEqualTo(otherOwner.getId());
             assertThat(reloaded.getStatus()).isEqualTo(PassportStatus.ACTIVE);

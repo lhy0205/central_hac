@@ -18,16 +18,14 @@ class SlotGridCalculator {
     static List<LocalDateTime> gridFor(Store store, LocalDate date) {
         List<LocalDateTime> slots = new ArrayList<>();
         int slotLength = store.getSlotLengthMinutes();
-        // slotLength가 0 이하면 커서가 전진하지 않거나 거꾸로 가서 무한 루프가 된다. 매장 행은
-        // 시드 마이그레이션으로만 채워지고 쓰기 API가 없어(Store.java 주석 참고) 현재는 발생하지
-        // 않지만, CHECK 제약이 없으므로 방어적으로 막는다 — 그런
-        // 매장은 예약 가능 슬롯이 없는 것으로 취급한다.
+        // slotLength가 0 이하면 커서가 전진하지 않거나 거꾸로 가서 무한 루프다. 매장 쓰기 API가
+        // 없어(Store.java 참고) 지금은 안 생기지만 CHECK 제약도 없으니 방어적으로 막고,
+        // 그런 매장은 예약 가능 슬롯이 없는 걸로 취급한다.
         if (slotLength <= 0) {
             return slots;
         }
-        // LocalTime.plusMinutes/isAfter는 24:00을 넘으면 자정을 넘겨 값이 감싸(wrap)돈다 — 분 단위
-        // 정수 연산으로 비교하면 그 감쌈 문제 없이 "슬롯이 자정을 넘기면 제외"가 그대로 성립한다
-        // (자정을 넘어가는 영업시간 자체는 여전히 지원하지 않는다).
+        // LocalTime.plusMinutes/isAfter는 24:00을 넘으면 감싸(wrap)돈다 — 분 단위 정수 연산으로
+        // 비교하면 그 문제 없이 자정 넘는 슬롯을 그대로 걸러낼 수 있다.
         int startMinutes = store.getBusinessHoursStart().toSecondOfDay() / 60;
         int endMinutes = store.getBusinessHoursEnd().toSecondOfDay() / 60;
         for (int cursor = startMinutes; cursor + slotLength <= endMinutes; cursor += slotLength) {

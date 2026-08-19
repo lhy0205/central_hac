@@ -29,8 +29,7 @@ public class CareRecordService {
     private final PassportOwnershipGuard passportOwnershipGuard;
 
     // PassportService.register()/DiagnosisService.submit()과 같은 이유로 업로드를 클래스 레벨
-    // @Transactional 밖으로 뺀다 — Spring Data 리포지토리 메서드는 각자 자체 트랜잭션을 가지므로
-    // 원자성은 그대로 유지된다.
+    // @Transactional 밖으로 뺀다 — Spring Data 리포지토리 메서드는 각자 트랜잭션을 가지므로 원자성은 유지된다.
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public CareRecordResponse create(Long passportId, Long requesterAccountId,
                                       CreateCareRecordRequest request, MultipartFile image) {

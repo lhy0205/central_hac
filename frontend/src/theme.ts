@@ -9,10 +9,8 @@ export const colors = {
   ivory: "#F6EFE1",
   danger: "#A04747",
 };
-/* 백엔드 OverallGrade가 S/A/B/C/D를 그대로 내려준다(2026-08-18 등급 5단계 전환).
-   한글 라벨("양호"/"관리 필요"/"긴급")을 따로 두지 않는다 — 진단 결과 화면은 이미 글자
-   등급으로 추이 차트를 그리고 있어서, 목록 화면만 한글로 옮기면 같은 앱 안에서 등급 표기가
-   두 가지로 갈린다. */
+/* 백엔드 OverallGrade가 S/A/B/C/D를 그대로 내려준다. 한글 라벨을 따로 두지 않는다 —
+   진단 결과 화면이 이미 글자 등급으로 차트를 그리므로 목록만 한글로 바꾸면 표기가 갈린다. */
 export function gradeLabel(grade: string | null | undefined) {
   return grade ?? null;
 }

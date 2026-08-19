@@ -2,9 +2,8 @@
 PaddleOCR 기반 텍스트 인식 엔진. 이미지에서 텍스트 영역을 찾아 텍스트/신뢰도/좌표를
 뽑고, 그중 코드로 보이는 후보를 규칙 기반으로 추려낸다.
 
-PaddleOCR을 고른 이유(README.md 참고): 2026년 기준 오픈소스 OCR 벤치마크(OmniDocBench 등)
-상위권이면서, 특히 각인/스탬프/공산품 텍스트(dot-matrix, embossed) 인식에 강해 가방 내부
-시리얼 태그처럼 대비가 낮고 폰트가 특이한 텍스트에 적합함.
+PaddleOCR을 고른 이유(README.md 참고): 오픈소스 OCR 벤치마크 상위권이면서 각인/스탬프/
+공산품 텍스트(dot-matrix, embossed) 인식에 강해 가방 내부 시리얼 태그에 적합함.
 
 최초 실행 시 PaddleOCR이 모델 가중치를 자동 다운로드한다(수십MB). 방화벽 환경이면
 `~/.paddlex`(PADDLE_PDX_CACHE_HOME) 캐시를 미리 받아둬야 한다.
@@ -24,11 +23,10 @@ CODE_LENGTH = int(os.environ.get("OCR_CODE_LENGTH", "5"))
 _CODE_PATTERN = os.environ.get("OCR_CODE_PATTERN", r"^[A-Z][0-9]{4}$")
 _CODE_RE = re.compile(_CODE_PATTERN)
 
-# 카메라로 실시간 스캔할 때는 매 프레임을 고해상도 그대로 돌리면 느리다. 휴대폰 카메라
-# 원본 해상도(3000~4000px)를 CPU/GPU 어느 쪽이든 그대로 돌리면 처리 시간이 크게 늘어나서
-# (실측: CPU에서 3024x4032 한 장에 168초 — 앱 타임아웃의 원인이었음) 여기서 먼저 한 변을
-# 이 값 이하로 줄인 뒤 PaddleOCR에 넘긴다. text_det_limit_side_len은 탐지 모델 내부
-# 리사이즈만 담당하고 디코딩/후처리 비용은 못 줄이므로 별도로 앞단에서 리사이즈함.
+# 휴대폰 카메라 원본 해상도(3000~4000px)를 CPU/GPU 어느 쪽이든 그대로 돌리면 처리 시간이
+# 크게 늘어나 앱 타임아웃을 넘긴다. 여기서 먼저 한 변을 이 값 이하로 줄인 뒤 PaddleOCR에
+# 넘긴다. text_det_limit_side_len은 탐지 모델 내부 리사이즈만 담당하고 디코딩/후처리
+# 비용은 못 줄이므로 별도로 앞단에서 리사이즈함.
 MAX_IMAGE_SIDE = int(os.environ.get("OCR_MAX_IMAGE_SIDE", "1280"))
 DET_LIMIT_SIDE_LEN = int(os.environ.get("OCR_DET_LIMIT_SIDE_LEN", "960"))
 
@@ -60,9 +58,9 @@ def load_engine(lang: str = "en") -> PaddleOCR:
             use_doc_unwarping=False,
             use_textline_orientation=True,
             text_det_limit_side_len=DET_LIMIT_SIDE_LEN,
-            # mkldnn은 CPU 전용 최적화 경로다. GPU에서는 의미 없고, CPU에서는 이 환경
-            # (paddlepaddle 3.3.1 + paddlex 조합)의 기본값(True)이 텍스트 탐지 단계에서
-            # NotImplementedError로 죽는 걸 확인해서 CPU일 때만 명시적으로 꺼준다.
+            # mkldnn은 CPU 전용 최적화 경로다. GPU에서는 의미 없고, CPU에서는 기본값(True)이
+            # paddlepaddle 3.3.1 + paddlex 조합에서 텍스트 탐지 단계에 NotImplementedError를
+            # 내서 CPU일 때만 명시적으로 꺼준다.
             **({"enable_mkldnn": False} if device == "cpu" else {}),
         )
         print(f"OCR 엔진 device={device}")

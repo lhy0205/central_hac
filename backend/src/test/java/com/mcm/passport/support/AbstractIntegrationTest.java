@@ -15,8 +15,8 @@ public abstract class AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // The Postgres container (and its data) is now shared by every integration test class
-    // (see TestcontainersConfiguration). Without this, fixture values that collide across
+    // The Postgres container (and its data) is shared by every integration test class
+    // (see TestcontainersConfiguration), so without this, fixture values that collide across
     // classes (e.g. the same serial number or email used in two different test files) trip
     // unique constraints depending on execution order.
     //

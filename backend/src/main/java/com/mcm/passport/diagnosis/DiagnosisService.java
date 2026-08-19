@@ -46,15 +46,13 @@ public class DiagnosisService {
             Diagnosis diagnosis = new Diagnosis(passportId, diagnosisType, imageUrls,
                 result.itemScores(), result.overallGrade(), result.evidenceText());
             // 업로드가 오래 걸리는 사이 탈퇴/소유권 변경이 있었을 수 있어 저장 직전에 다시 확인한다.
-            // 이 재확인도 try 안에 있어야 여기서 나는 예외까지 아래 catch의 고아 이미지 정리를 거친다.
-            // 잠금을 걸지 않는 건 의도적이다 — 이 메서드는 NOT_SUPPORTED라 앰비언트 트랜잭션이 없어
-            // PESSIMISTIC_WRITE 조회가 실패하고, 통과시켜도 잠금이 save()까지 이어지지 않는다.
+            // 예외도 try 안에서 나야 아래 catch의 고아 이미지 정리를 거친다.
+            // 잠금은 안 건다 — NOT_SUPPORTED라 앰비언트 트랜잭션이 없어 PESSIMISTIC_WRITE 조회가 실패하고, 통과해도 save()까지 안 이어진다.
             passport = getOwnedActivePassport(passportId, requesterAccountId);
             saved = diagnosisRepository.save(diagnosis);
         } catch (RuntimeException e) {
-            // 저장이 실패하면 방금 업로드한 이미지가 어떤 진단에도 연결되지 못하는 고아가 되므로
-            // 베스트에포트로 정리한다(정리 실패는 로그만 남기고 원래 예외를 가리지 않는다). 이미지별로
-            // 개별 try/catch를 둔다 — 하나로 묶으면 앞쪽 삭제 실패 시 뒤쪽 이미지가 시도조차 안 된다.
+            // 저장이 실패하면 방금 업로드한 이미지가 고아가 되므로 베스트에포트로 정리한다
+            // (정리 실패는 로그만 남기고 원래 예외는 유지). 이미지별로 개별 try/catch — 하나로 묶으면 앞쪽 삭제 실패 시 뒤쪽이 시도조차 안 된다.
             imageUrls.forEach(url -> {
                 try {
                     imageStorageService.delete(url);

@@ -93,8 +93,7 @@ class DiagnosisServiceTest {
 
     @Test
     void submitCleansUpUploadedImagesWhenSaveFails() {
-        // 업로드는 성공했는데 그 직후 save()가 실패하면, 이미 업로드된 이미지가 어떤 진단에도
-        // 연결되지 못하는 고아가 된다 — 베스트에포트로 정리되고 원래 예외는 그대로 전파되는지 검증한다.
+        // save()가 실패하면 이미 업로드된 이미지가 고아로 남으니, 정리는 되면서 원래 예외는 그대로 전파돼야 함
         diagnosisService = new DiagnosisService(
             diagnosisRepository, imageStorageService, wearDiagnosisEngine, notificationService, passportOwnershipGuard);
         Passport passport = new Passport("A1234", 2024, 1L, "Nomad Backpack", "애칭",
@@ -116,8 +115,7 @@ class DiagnosisServiceTest {
 
     @Test
     void submitCleansUpUploadedImagesWhenOwnershipRecheckFails() {
-        // 저장 직전 재확인이 try 블록 밖에 있으면, 재확인이 던지는
-        // 예외는 고아 이미지 정리를 거치지 않고 그대로 새어나갔다.
+        // 저장 직전 재확인에서 예외가 나도 업로드된 이미지는 정리되어야 함
         diagnosisService = new DiagnosisService(
             diagnosisRepository, imageStorageService, wearDiagnosisEngine, notificationService, passportOwnershipGuard);
         Passport passport = new Passport("A1234", 2024, 1L, "Nomad Backpack", "애칭",

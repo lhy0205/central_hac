@@ -103,9 +103,8 @@ public class Passport {
     }
 
     // TransferService/NotificationService/PassportSummaryResponse가 각자 따로
-    // ChronoUnit.DAYS.between(purchaseDate, ...)을 구현하고 있던 걸 한 곳으로 모은다
-    //  — "소유 경과일" 정의가 바뀌면(예: 반올림 규칙) 네 군데를 손으로 맞춰야
-    // 하는 드리프트 위험이 있었다.
+    // ChronoUnit.DAYS.between(purchaseDate, ...)을 구현하지 않도록 한 곳으로 모은다 —
+    // "소유 경과일" 정의가 바뀌면(예: 반올림 규칙) 여러 군데를 손으로 맞춰야 하는 걸 막는다.
     public long ownershipDays(LocalDate asOf) {
         return ChronoUnit.DAYS.between(this.purchaseDate, asOf);
     }

@@ -40,7 +40,7 @@ public class TransferService {
     private final Clock clock;
 
     public TransferCodeResponse issueCode(Long passportId, Long requesterAccountId) {
-        // 동시 발급 요청이 둘 다 "만료 처리 후 새 코드 생성"을 통과해버리는 경합 상태를 막기 위해
+        // 동시 발급 요청이 둘 다 "만료 처리 후 새 코드 생성"을 통과하는 경합을 막기 위해
         // 여권 행을 잠근 채로 조회한다(자세한 이유는 PassportRepository.findByIdAndStatusForUpdate 참고).
         Passport passport = passportOwnershipGuard.getOwnedActivePassportForUpdate(passportId, requesterAccountId);
         transferCodeRepository.findAllByPassportIdAndStatus(passportId, TransferStatus.ISSUED)
@@ -71,9 +71,8 @@ public class TransferService {
         validateCodeFormat(code);
         accountService.getActiveAccountOrThrow(requesterAccountId);
         TransferCode transferCode = getRedeemableCode(code);
-        // redeem()은 CANNOT_TRANSFER_TO_SELF를 던지는데 preview()가 이 체크 없이 성공을 돌려주면,
-        // 발급자 본인이 자기 코드를 미리보기했을 때 redeem 가능하다고 오해하게 만드는 계약 불일치가
-        // 생긴다.
+        // redeem()과 동일하게 본인 코드는 막는다 — 안 그러면 미리보기가 성공했으니
+        // redeem도 될 거라고 오해하게 된다.
         if (transferCode.getIssuedByAccountId().equals(requesterAccountId)) {
             throw new ApiException(ErrorCode.CANNOT_TRANSFER_TO_SELF);
         }
@@ -98,26 +97,23 @@ public class TransferService {
         // 원인일 수 있어 코드 상태를 먼저 확인한다.
         Optional<Passport> passportForUpdate =
             passportRepository.findByIdAndStatusForUpdate(passportId, PassportStatus.ACTIVE);
-        // 이 트랜잭션에서 TransferCode 엔티티를 처음 로드하는 지점이다(잠금 포함) — findPassportIdByCode는
-        // 스칼라 값만 가져와 영속성 컨텍스트에 엔티티를 올리지 않으므로, 여기서 바로 잠긴 채로 신선하게
-        // 읽힌다(1차 캐시에 걸려 다른 트랜잭션이 방금 커밋한 변경을 놓치는 문제가 없다).
+        // TransferCode 엔티티를 여기서 처음 로드한다(잠금 포함) — findPassportIdByCode는 스칼라만
+        // 가져와 영속성 컨텍스트에 올라가지 않으므로 1차 캐시에 안 걸리고 최신 값을 잠긴 채로 읽는다.
         TransferCode transferCode = transferCodeRepository.findByCodeForUpdate(code)
             .orElseThrow(() -> new ApiException(ErrorCode.TRANSFER_CODE_EXPIRED_OR_USED));
         if (!transferCode.isRedeemable(LocalDateTime.now(clock))) {
             throw new ApiException(ErrorCode.TRANSFER_CODE_EXPIRED_OR_USED);
         }
-        // 코드 자체의 발급자 정보만으로 판단 가능한 CANNOT_TRANSFER_TO_SELF를 여권 존재 여부보다
-        // 먼저 확인한다 — 잠금 순서를 바꾼 이전 리팩터링(56bbbdb)이 이 순서를 뒤집어 자기 자신에게
-        // 양도를 시도한 발급자가 (여권이 독립적으로 soft-delete된 드문 경우) PASSPORT_NOT_FOUND를
-        // 받는 부정확한 결과를 만들었다.
+        // CANNOT_TRANSFER_TO_SELF는 코드의 발급자 정보만으로 판단되므로 여권 존재 여부보다 먼저
+        // 확인한다 — 순서가 바뀌면, 자기 자신에게 양도를 시도했는데 여권이 독립적으로 soft-delete된
+        // 드문 경우에 PASSPORT_NOT_FOUND로 잘못 나온다.
         if (transferCode.getIssuedByAccountId().equals(requesterAccountId)) {
             throw new ApiException(ErrorCode.CANNOT_TRANSFER_TO_SELF);
         }
         Passport passport = passportForUpdate.orElseThrow(() -> new ApiException(ErrorCode.PASSPORT_NOT_FOUND));
-        // 소유권을 실제로 옮기기 직전에 요청자 계정을 잠근 채로 다시 확인한다 — 맨 위의 초기 확인은
-        // 잠금이 없어서, 그 사이 AccountService.withdraw()가 이 계정을 먼저 잠그고 탈퇴 처리를
-        // 끝냈어도 이 트랜잭션은 그 사실을 모른 채 여권을 탈퇴 계정으로 넘겨버릴 수 있다와 정확히 대칭인 재확인 — AccountRepository.findByIdForUpdate
-        // 참고).
+        // 옮기기 직전에 요청자 계정을 잠근 채로 다시 확인한다 — 맨 위 초기 확인은 잠금이 없어서,
+        // 그 사이 AccountService.withdraw()가 이 계정을 먼저 잠그고 탈퇴시켜도 이 트랜잭션은 그걸
+        // 모른 채 여권을 탈퇴 계정으로 넘겨버릴 수 있다.
         accountService.getActiveAccountOrThrowForUpdate(requesterAccountId);
         passport.transferOwnershipTo(requesterAccountId);
         transferCode.redeem(requesterAccountId, LocalDateTime.now(clock));
@@ -127,10 +123,8 @@ public class TransferService {
         return com.mcm.passport.passport.dto.PassportResponse.from(passport);
     }
 
-    // ErrorCode.INVALID_TRANSFER_CODE_FORMAT는 프론트엔드 API 명세서에 문서화돼 있었지만 지금까지
-    // 어디서도 던져지지 않았다 — 형식이 잘못된 코드도 그냥 조회를 태워 TRANSFER_CODE_EXPIRED_OR_USED로
-    // 뭉뚱그려졌다. 발급 형식(CODE_CHARS 중 CODE_LENGTH자)과 다르면
-    // DB 조회 전에 걸러낸다.
+    // 발급 형식(CODE_CHARS 중 CODE_LENGTH자)과 다르면 DB 조회 전에 걸러내서
+    // TRANSFER_CODE_EXPIRED_OR_USED로 뭉뚱그리지 않고 INVALID_TRANSFER_CODE_FORMAT로 던진다.
     private void validateCodeFormat(String code) {
         if (code == null || code.length() != CODE_LENGTH
                 || !code.chars().allMatch(c -> CODE_CHARS.indexOf(c) >= 0)) {

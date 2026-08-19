@@ -71,9 +71,8 @@ class ReservationControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void createRejectsNullElementInRequestItemsWith400() throws Exception {
-        // 리스트 자체의 @NotNull/@Size만으로는 원소가 null인 것까지는
-        // 막지 못해서, requestItems().stream().map(Enum::name)에서 처리되지 않은 NPE(500)가 나갔다
-        // — 원소별 @NotNull로 요청 단계에서 400을 돌려줘야 한다.
+        // 리스트의 @NotNull/@Size만으로는 원소가 null인 건 못 막아서 map(Enum::name)에서 NPE(500) 위험 —
+        // 원소별 @NotNull로 요청 단계에서 400을 돌려줘야 함
         Account account = accountRepository.save(new Account("res-null-item@example.com", "hash", "닉네임"));
         String token = jwtTokenProvider.generateToken(account.getId());
         Passport passport = passportRepository.save(new Passport("A1234", 2024, account.getId(),

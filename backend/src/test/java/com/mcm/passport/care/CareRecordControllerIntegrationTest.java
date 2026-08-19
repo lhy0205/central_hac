@@ -22,12 +22,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Regression test for the missing @Valid on CareRecordController's @RequestPart("request") param
-// (final whole-branch review item 5): CreateCareRecordRequest.careType's @NotBlank was previously
-// dead code and a blank value reached the DB NOT NULL constraint as an unhandled
-// DataIntegrityViolationException. Follows PassportControllerIntegrationTest's
-// @AutoConfigureMockMvc + AbstractIntegrationTest pattern so the real SecurityFilterChain and
-// @Valid are both exercised end-to-end.
+// Without @Valid on the @RequestPart("request") param, CreateCareRecordRequest.careType's
+// @NotBlank is dead code and a blank value hits the DB NOT NULL constraint as an unhandled
+// DataIntegrityViolationException instead of a clean 400. Uses PassportControllerIntegrationTest's
+// @AutoConfigureMockMvc + AbstractIntegrationTest setup so the real SecurityFilterChain and
+// @Valid both run end-to-end.
 @AutoConfigureMockMvc
 class CareRecordControllerIntegrationTest extends AbstractIntegrationTest {
 

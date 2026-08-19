@@ -82,8 +82,7 @@ class TimelineServiceTest {
 
     @Test
     void createEventCleansUpUploadedImageWhenOwnershipRecheckFails() {
-        // 저장 직전 재확인이 try 블록 밖에 있으면, 재확인이 던지는
-        // 예외는 고아 이미지 정리를 거치지 않고 그대로 새어나갔다.
+        // 저장 직전 재확인에서 예외가 나도 업로드된 이미지는 정리되어야 함
         timelineService = newService();
         Passport passport = new Passport("A1234", 2024, 1L, "Nomad Backpack", "애칭",
             LocalDate.of(2024, 1, 1), "MCM 강남점", null, false, List.of(), UsageFrequency.DAILY);
@@ -126,12 +125,8 @@ class TimelineServiceTest {
         timelineService = newService();
         Passport passport = new Passport("A1234", 2024, 1L, "Nomad Backpack", "애칭",
             LocalDate.of(2024, 1, 1), "MCM 강남점", null, false, List.of(), UsageFrequency.DAILY);
-        // getTimeline()이 REGISTRATION 항목의 occurredAt으로 passport.getCreatedAt()을 쓰는데,
-        // 이 필드는 @CreatedDate라 JPA 감사(auditing)로만 채워진다 — 이 단위 테스트처럼 생성자로
-        // 직접 만든 엔티티는 영속화되지 않으므로 null로 남는다. 항목이 하나뿐이면 정렬 시
-        // 비교자가 호출되지 않아 드러나지 않지만, 이 테스트처럼 두 번째 항목(RESERVATION)이 생기면
-        // items.sort()가 null과 실제 값을 비교하려다 NPE가 난다. 리플렉션으로 직접 채워
-        // 정렬 비교가 정상 동작하게 한다.
+        // createdAt은 @CreatedDate라 JPA 감사로만 채워지고 생성자로 만든 엔티티는 null이라
+        // 리플렉션으로 직접 세팅 (안 그러면 정렬 비교에서 NPE)
         org.springframework.test.util.ReflectionTestUtils.setField(
             passport, "createdAt", java.time.LocalDateTime.of(2024, 1, 1, 0, 0));
         when(passportOwnershipGuard.getOwnedActivePassport(1L, 1L)).thenReturn(passport);
@@ -143,9 +138,8 @@ class TimelineServiceTest {
             1L, 1L, java.time.LocalDateTime.of(2026, 9, 1, 14, 0),
             List.of(com.mcm.passport.reservation.CareRequestItemType.LEATHER_CLEANING.name()));
         when(reservationRepository.findAllByPassportId(1L)).thenReturn(List.of(reservation));
-        // TimelineService가 매장을 건별 findById가 아니라 StoreRepository.namesByIds()로 배치
-        // 조회한다(N+1 수정, 2026-08-14). storeRepository는 목이라 default 메서드 본문이 실제로
-        // 실행되지 않으므로, findAllById가 아니라 namesByIds 자체를 스텁해야 한다.
+        // 매장 이름은 건별 findById가 아니라 namesByIds()로 배치 조회함.
+        // storeRepository가 목이라 default 메서드 본문은 안 도니 namesByIds 자체를 스텁해야 함
         when(storeRepository.namesByIds(List.of(1L))).thenReturn(Map.of(1L, "MCM 강남점"));
 
         var items = timelineService.getTimeline(1L, 1L);
@@ -159,8 +153,7 @@ class TimelineServiceTest {
 
     @Test
     void getTimelineIncludesCompletedTransfers() {
-        // 승계(소유권 이전)는 여권 일생의 가장 중요한 이벤트 중 하나인데도
-        // 타임라인에 빠져 있었다 — 예약과 같은 방식으로 6번째 소스로 추가한다.
+        // 승계(소유권 이전)도 예약과 같은 방식으로 타임라인에 포함되는지 확인
         timelineService = newService();
         Passport passport = new Passport("A1234", 2024, 1L, "Nomad Backpack", "애칭",
             LocalDate.of(2024, 1, 1), "MCM 강남점", null, false, List.of(), UsageFrequency.DAILY);
@@ -259,8 +252,7 @@ class TimelineServiceTest {
 
     @Test
     void deleteEventCleansUpAssociatedImage() {
-        // createEvent()는 저장 실패 시 업로드된 이미지를 정리하는데,
-        // 삭제 쪽은 이벤트 행만 지우고 이미지는 그대로 둬서 Cloudinary에 영구 고아가 쌓였다.
+        // createEvent()가 실패 시 이미지를 정리하듯, 삭제도 연결된 이미지를 Cloudinary에서 같이 지워야 함
         timelineService = newService();
         TimelineEvent event = new TimelineEvent(1L, TimelineEventType.MOMENT, "원래 메모", "https://cdn/a.jpg", null);
         when(timelineEventRepository.findById(10L)).thenReturn(java.util.Optional.of(event));

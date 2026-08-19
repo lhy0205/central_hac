@@ -8,9 +8,8 @@ import { colors, gradeLabel } from "../../src/theme";
 
 const bag = require("../../assets/mcm-bag.png");
 
-// value는 시각 없는 날짜(LocalDate, "YYYY-MM-DD")다. new Date(value)로 바로 파싱하면 스펙상
-// UTC 자정으로 해석돼, UTC보다 앞선 시간대(KST 등)에서는 매일 자정~시차만큼의 구간 동안
-// 하루 적게 계산된다 — 로컬 자정을 기준으로 직접 구성해서 피한다.
+// value는 시각 없는 날짜(LocalDate, "YYYY-MM-DD")다. new Date(value)로 바로 파싱하면 UTC
+// 자정으로 해석돼 KST 등에서 하루 적게 계산될 수 있다 — 로컬 자정 기준으로 직접 구성한다.
 function daysSince(value: string) {
   const [y, m, d] = value.slice(0, 10).split("-").map(Number);
   return Math.max(0, Math.floor((Date.now() - new Date(y, m - 1, d).getTime()) / 86400000));

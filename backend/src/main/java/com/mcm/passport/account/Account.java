@@ -68,10 +68,8 @@ public class Account {
         this.passwordHash = newPasswordHash;
     }
 
-    // journeyAlertsEnabled/marketingAlertsEnabled는 저장만 될 뿐 아직 어떤 알림 생성 로직도
-    // 참조하지 않는다 — "여권 기록 알림"에 대응하는 별도 알림 타입이 없고(NotificationType은
-    // SELF_CARE/STORE_SERVICE/REPURCHASE/MILESTONE뿐), "마케팅 알림"에 대응하는 타입은 아예
-    // 존재하지 않는다. careAlertsEnabled만 NotificationService의 생성 로직을 실제로 게이팅한다.
+    // journeyAlertsEnabled/marketingAlertsEnabled는 저장만 되고 아직 알림 생성 로직에서 안 쓰인다 —
+    // 대응하는 알림 타입 자체가 없다. 실제로 게이팅하는 건 careAlertsEnabled뿐.
     public void updateNotificationPreferences(
             boolean careAlertsEnabled, boolean journeyAlertsEnabled, boolean marketingAlertsEnabled) {
         this.careAlertsEnabled = careAlertsEnabled;

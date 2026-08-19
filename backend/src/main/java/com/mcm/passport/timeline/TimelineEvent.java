@@ -53,10 +53,8 @@ public class TimelineEvent {
         if (note != null) this.note = note;
     }
 
-    // JPA 스펙상 @EntityListeners로 등록된 리스너(AuditingEntityListener, 여기서 createdAt을
-    // 채움)는 엔티티 자신이 정의한 @PrePersist보다 먼저 실행되도록 보장되므로, 이 시점에는
-    // createdAt이 이미 Clock 기반으로 채워져 있다 — 그 값을 그대로 재사용해 eventDate 기본값을
-    // 정한다(월클록을 다시 부르지 않는다).
+    // AuditingEntityListener가 엔티티 자신의 @PrePersist보다 먼저 실행되도록 보장되므로 이 시점엔
+    // createdAt이 이미 Clock 기반으로 채워져 있다 — 그 값을 그대로 재사용해 eventDate 기본값을 정한다.
     @PrePersist
     void prePersist() {
         if (this.eventDate == null) {

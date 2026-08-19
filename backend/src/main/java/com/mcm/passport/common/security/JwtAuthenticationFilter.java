@@ -26,9 +26,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
-            // 서명/만료가 유효해도 그 사이 계정이 탈퇴했을 수 있다 — 각 서비스가
-            // PassportOwnershipGuard/getActiveAccountOrThrow로 개별 재확인하고 있긴 하지만, 앞으로
-            // 이 체크를 빼먹은 엔드포인트가 추가될 위험을 없애기 위해 여기서도 한 번 더 막는다.
+            // 서명/만료가 유효해도 그 사이 계정이 탈퇴했을 수 있다 — 각 서비스에서도 재확인하지만
+            // 여기서 한 번 더 막아둔다.
             if (jwtTokenProvider.isValid(token)) {
                 Long accountId = jwtTokenProvider.getAccountId(token);
                 boolean isActiveAccount = accountRepository.findById(accountId)

@@ -114,10 +114,8 @@ export default function Account() {
       return;
     }
 
-    // 백엔드에 아이디/이메일 변경 엔드포인트가 아직 없다(AccountController는 signup/login/
-    // updateMe/changePassword뿐이고 UpdateProfileRequest에는 nickname만 있다). 호출 없이
-    // "요청 완료"를 띄우면 사용자는 바뀐 줄 알고 그 아이디로 로그인을 시도하게 되므로,
-    // 미지원임을 그대로 알린다.
+    // 백엔드에 아이디/이메일 변경 엔드포인트가 아직 없다(updateMe는 nickname만 받음) —
+    // "요청 완료"를 띄우면 사용자가 바뀐 줄 알고 그 아이디로 로그인을 시도하니 미지원임을 알린다.
     Alert.alert(
       "아직 지원하지 않는 기능",
       `${step === "email" ? "이메일" : "아이디"} 변경은 서버 API가 준비되면 제공될 예정입니다. 입력하신 ${value}(으)로는 아직 변경되지 않았습니다.`,

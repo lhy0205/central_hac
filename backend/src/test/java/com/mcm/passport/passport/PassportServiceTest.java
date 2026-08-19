@@ -129,8 +129,7 @@ class PassportServiceTest {
 
     @Test
     void registerCleansUpUploadedImagesWhenDbConstraintRaceIsLost() {
-        // 업로드는 성공했는데 그 직후 save()가 DB 유니크 제약 경합으로 실패하면, 이미 업로드된
-        // 이미지가 어떤 여권에도 연결되지 못하는 고아가 된다 — 베스트에포트로 정리되는지 검증한다.
+        // save()가 유니크 제약 경합으로 실패하면 업로드된 이미지가 고아로 남으니 정리돼야 함
         passportService = newService();
         when(passportRepository.existsBySerialNumberAndPurchaseYearAndStatus("A1234", 2024, PassportStatus.ACTIVE))
             .thenReturn(false);
@@ -155,9 +154,8 @@ class PassportServiceTest {
 
     @Test
     void registerNormalizesSerialToUppercaseForDuplicateCheckAndStorage() {
-        // 새 포맷 정규식은 대소문자를 둘 다 허용하는데 정규화가 없으면
-        // "a1234"와 "A1234"가 중복 체크/DB 인덱스 양쪽에서 서로 다른 값으로 취급돼 같은 실물
-        // 가방이 두 번 등록될 수 있었다.
+        // 시리얼 정규식이 대소문자를 둘 다 허용하니, 정규화 없으면 "a1234"와 "A1234"가 중복 체크/DB
+        // 인덱스에서 다른 값으로 취급돼 같은 가방이 두 번 등록될 수 있음
         passportService = newService();
         when(passportRepository.existsBySerialNumberAndPurchaseYearAndStatus("A1234", 2024, PassportStatus.ACTIVE))
             .thenReturn(false);
@@ -176,8 +174,7 @@ class PassportServiceTest {
 
     @Test
     void registerCleansUpUploadedImagesWhenAccountWithdrawnDuringUpload() {
-        // 업로드 이후 재확인이 try 블록 밖에 있으면, 그 재확인이 던지는
-        // 예외는 고아 이미지 정리를 거치지 않고 그대로 새어나간다.
+        // 업로드 이후 재확인에서 예외가 나도 업로드된 이미지는 정리되어야 함
         passportService = newService();
         when(passportRepository.existsBySerialNumberAndPurchaseYearAndStatus("A1234", 2024, PassportStatus.ACTIVE))
             .thenReturn(false);
@@ -211,9 +208,8 @@ class PassportServiceTest {
         com.mcm.passport.diagnosis.Diagnosis diagnosis = new com.mcm.passport.diagnosis.Diagnosis(
             passport.getId(), com.mcm.passport.diagnosis.DiagnosisType.SELF, List.of("https://cdn/1.jpg"),
             java.util.Map.of("마모", 45), com.mcm.passport.diagnosis.OverallGrade.C, "근거");
-        // findLatestByPassportIdIn은 리포지토리 인터페이스의 default 메서드라 Mockito 목이 실제
-        // 구현을 타지 않는다 — 서비스가 실제로 호출하는 이 메서드를 직접 스텁한다. passport가
-        // 저장되지 않은 엔티티라 getId()가 null이라, null 키를 허용하는 HashMap을 쓴다.
+        // findLatestByPassportIdIn은 default 메서드라 목이 실제 구현을 안 타서 직접 스텁.
+        // passport가 미저장 엔티티라 getId()가 null이라 null 키 허용하는 HashMap 사용
         java.util.Map<Long, com.mcm.passport.diagnosis.Diagnosis> latestDiagnosisByPassportId = new java.util.HashMap<>();
         latestDiagnosisByPassportId.put(passport.getId(), diagnosis);
         when(diagnosisRepository.findLatestByPassportIdIn(any()))
@@ -351,9 +347,8 @@ class PassportServiceTest {
 
     @Test
     void deleteUsesLockedOwnershipReadToAvoidStaleTransferRace() {
-        // getOwnedActivePassport()(잠금 없음)을 쓰면, redeem()이 이미 잠그고 소유권을 옮긴 뒤
-        // 커밋해도 이 트랜잭션이 그 사실을 모른 채 낡은 인스턴스를 그대로 softDelete할 수 있다
-        // — delete()는 반드시 ForUpdate 변형을 거쳐야 한다.
+        // 잠금 없는 getOwnedActivePassport()를 쓰면 redeem()이 소유권을 옮기고 커밋해도 이 트랜잭션은
+        // 낡은 인스턴스를 그대로 softDelete할 수 있다 — delete()는 ForUpdate 변형을 써야 함
         passportService = newService();
         Passport passport = new Passport("A1234", 2024, 1L, "Nomad Backpack", "애칭",
             LocalDate.of(2024, 1, 1), "MCM 강남점", null, false, List.of(), UsageFrequency.RARE);

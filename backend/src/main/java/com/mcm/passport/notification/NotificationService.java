@@ -161,13 +161,11 @@ public class NotificationService {
             ? Set.of()
             : new HashSet<>(notificationRepository.findPassportIdsByTypeAndCreatedAtAfter(
                 NotificationType.SELF_CARE, cooldownStart));
-        // 알려진 한계: ShedLock lockAtMostFor(10분)가 만료돼 배치가 겹쳐 돌면 두 실행이 서로의
-        // 커밋 전 insert를 못 봐 SELF_CARE가 중복 생성될 수 있다. 30일 슬라이딩 윈도우라
-        // DB 유니크 제약으로는 못 막고, 계정 잠금은 이 배치 규모 대비 과해서 남겨둔다.
+        // 알려진 한계: ShedLock lockAtMostFor(10분)가 만료돼 배치가 겹쳐 돌면 서로의 커밋 전 insert가
+        // 안 보여 SELF_CARE가 중복 생성될 수 있다. 30일 슬라이딩 윈도우라 유니크 제약으로는 못 막고, 계정 잠금은 과해서 안 건다.
 
-        // 스케줄러가 하루 걸러도 마일스톤을 놓치지 않도록, 보낸 마일스톤 "값"을 집합으로 모아
-        // 지나친 것 중 미발송분을 따라잡는다. 개수만 세면 중복 발송이 한 번이라도 생겼을 때
-        // 이후 마일스톤이 영구히 스킵된다.
+        // 스케줄러가 하루 걸러도 마일스톤을 놓치지 않도록 보낸 마일스톤 "값"을 집합으로 모아
+        // 지나친 것 중 미발송분만 따라잡는다. 개수만 세면 중복 발송 한 번에 이후 마일스톤이 영구히 스킵된다.
         Map<Long, Set<Integer>> milestoneDaysSentByPassportId = new HashMap<>();
         if (!passportIds.isEmpty()) {
             for (Notification n : notificationRepository.findAllByPassportIdInAndType(passportIds, NotificationType.MILESTONE)) {
@@ -212,10 +210,8 @@ public class NotificationService {
 
     public Page<NotificationResponse> list(Long passportId, Long requesterAccountId, Pageable pageable) {
         assertOwnership(passportId, requesterAccountId);
-        // generateReminders()는 한 트랜잭션 안에서 같은 여권에 여러 알림을 만들 수 있고, Postgres의
-        // now()는 트랜잭션당 고정이라 그 알림들이 정확히 같은 created_at을 가질 수 있다 —
-        // 타이브레이커 없이는 페이지 간 순서가 불안정해진다. Reservation/CareRecord/Passport.list()와
-        // 같은 방식으로 id를 덧붙인다.
+        // generateReminders()가 한 트랜잭션에서 만든 알림들은 Postgres now()가 트랜잭션당 고정이라
+        // created_at이 정확히 같을 수 있다. Reservation/CareRecord/Passport.list()와 같은 방식으로 id를 타이브레이커로 덧붙인다.
         Pageable stablePageable = PageRequest.of(
             pageable.getPageNumber(), pageable.getPageSize(),
             pageable.getSort().and(Sort.by(Sort.Direction.ASC, "id")));

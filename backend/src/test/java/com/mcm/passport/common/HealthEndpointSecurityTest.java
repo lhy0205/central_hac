@@ -10,12 +10,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Deliberately NOT addFilters = false: this test boots the real Spring Security
-// SecurityFilterChain (SecurityConfig) via the full application context, verifying
-// end-to-end that /api/health is actually reachable without an Authorization header.
-// HealthControllerTest covers the @WebMvcTest slice with addFilters = false, which
-// bypasses the filter chain entirely and cannot verify permitAll() behavior.
-// SecurityConfig가 생긴 뒤 추가한 검증이다.
+// Deliberately NOT addFilters = false: boots the real SecurityFilterChain via the full
+// application context to verify /api/health is reachable without an Authorization header.
+// HealthControllerTest's @WebMvcTest slice bypasses the filter chain entirely, so it can't
+// verify permitAll() actually works.
 @AutoConfigureMockMvc
 class HealthEndpointSecurityTest extends AbstractIntegrationTest {
 

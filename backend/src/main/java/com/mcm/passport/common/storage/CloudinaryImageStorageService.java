@@ -38,10 +38,9 @@ public class CloudinaryImageStorageService implements ImageStorageService {
         } catch (ApiException e) {
             throw e;
         } catch (RuntimeException e) {
-            // Cloudinary SDK는 이미지가 아닌 파일에 IOException이 아니라 그냥
-            // RuntimeException("Invalid image file")을 던진다. 그대로 두면 catch를
-            // 빠져나가 GlobalExceptionHandler의 500 INTERNAL_ERROR가 되어, 사용자는
-            // 사진이 문제였다는 걸 알 수 없고 같은 파일로 계속 재시도하게 된다.
+            // Cloudinary SDK는 이미지가 아닌 파일에 IOException 대신 그냥
+            // RuntimeException("Invalid image file")을 던진다. 안 잡으면 500으로 새어나가서
+            // 사용자가 원인을 모른 채 같은 파일로 재시도하게 된다.
             String message = e.getMessage() == null ? "" : e.getMessage();
             if (message.toLowerCase().contains("invalid image")) {
                 log.warn("이미지가 아닌 파일 업로드 시도 (name={})", file.getOriginalFilename());

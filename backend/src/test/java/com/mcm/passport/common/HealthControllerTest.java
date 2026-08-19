@@ -10,9 +10,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// addFilters = false: no SecurityConfig bean exists yet at this scaffolding stage, so
-// Spring Security's default auto-config would otherwise secure every endpoint (401).
-// A later task wires up SecurityConfig and permits /api/health explicitly.
+// addFilters = false: this is a @WebMvcTest slice so SecurityConfig isn't loaded, and Spring
+// Security's default auto-config would otherwise 401 every endpoint. Real filter-chain behavior
+// is covered by HealthEndpointSecurityTest.
 @WebMvcTest(controllers = HealthController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class HealthControllerTest {

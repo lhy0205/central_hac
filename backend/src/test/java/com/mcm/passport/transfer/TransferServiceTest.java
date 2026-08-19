@@ -146,9 +146,8 @@ class TransferServiceTest {
 
     @Test
     void previewRejectsSelfTransfer() {
-        // redeem()은 CANNOT_TRANSFER_TO_SELF를 던지는데 preview()가
-        // 이 체크 없이 성공을 돌려주면, 발급자 본인이 자기 코드를 미리보기했을 때 redeem
-        // 가능하다고 오해하게 만드는 계약 불일치가 생겼다.
+        // preview()도 redeem()과 같은 self-transfer 체크를 해야 함 — 안 그러면 발급자가 자기 코드를
+        // 미리보기했을 때 redeem 가능하다고 오해할 수 있음
         transferService = newService();
         TransferCode code = new TransferCode(1L, "AB12CD", 1L,
             LocalDate.now(fixedClock).atStartOfDay().plusDays(3));
@@ -224,10 +223,9 @@ class TransferServiceTest {
 
     @Test
     void redeemRejectsWhenRequesterAccountWithdrawnJustBeforeTransfer() {
-        // AccountService.withdraw()가 소유 여권 스냅샷을 뜬 직후 이
-        // redeem()이 커밋되면 그 여권이 캐스케이드 취소를 빠져나가는 반대 방향 경합이 있었다 —
-        // redeem()이 소유권 이전 직전에 요청자 계정을 잠근 채로 재확인해서, withdraw()가 먼저
-        // 그 계정 행을 잠그고 커밋했다면 여기서 거부되어야 한다. 여권/코드 상태는 그대로여야 한다.
+        // withdraw()가 소유 여권 스냅샷을 뜬 직후 redeem()이 커밋되면 그 여권이 캐스케이드 취소를
+        // 빠져나가는 경합이 생길 수 있다 — redeem()이 소유권 이전 직전에 요청자 계정을 잠근 채
+        // 재확인해서, withdraw()가 먼저 그 계정을 잠그고 커밋했다면 여기서 거부돼야 함.
         transferService = newService();
         Passport passport = new Passport("A1234", 2024, 1L, "Nomad Backpack", "애칭",
             LocalDate.of(2024, 1, 1), "MCM 강남점", null, false, List.of(), UsageFrequency.DAILY);
@@ -250,10 +248,9 @@ class TransferServiceTest {
 
     @Test
     void redeemReportsSelfTransferBeforePassportNotFoundWhenBothConditionsHold() {
-        // 코드 발급자 본인이 자기 코드를 redeem 시도하면서, 그 사이 여권이 독립적으로
-        // soft-delete된 드문 경우에도 CANNOT_TRANSFER_TO_SELF가 PASSPORT_NOT_FOUND보다
-        // 우선해야 한다 — 코드 데이터만으로 판단 가능한 조건이 여권 조회 성공 여부에
-        // 좌우되면 안 된다.
+        // 발급자 본인이 자기 코드를 redeem 시도하는 동시에 여권이 독립적으로 soft-delete된 드문
+        // 경우에도 CANNOT_TRANSFER_TO_SELF가 PASSPORT_NOT_FOUND보다 우선해야 함 — 코드만으로 판단
+        // 가능한 조건이 여권 조회 성공 여부에 좌우되면 안 됨.
         transferService = newService();
         TransferCode code = new TransferCode(1L, "AB12CD", 1L,
             LocalDate.now(fixedClock).atStartOfDay().plusDays(3));

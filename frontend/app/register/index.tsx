@@ -97,8 +97,7 @@ export default function Register() {
   }
 
   // 촬영한 라벨 사진을 OCR 서버로 보내 일련번호를 자동으로 읽어낸다. 실패하거나 인식된
-  // 코드가 없어도 confirmSerial 화면으로는 넘어간다 — 그 화면이 빈 값을 안내하고 사용자가
-  // 직접 입력/정정할 수 있게 이미 설계되어 있다(SERIAL_PATTERN 검증은 "맞습니다" 클릭 시).
+  // 코드가 없어도 confirmSerial 화면으로 넘어간다 — 거기서 빈 값이면 직접 입력하게 되어 있다.
   async function runOcrAndProceed() {
     setOcrLoading(true);
     try {

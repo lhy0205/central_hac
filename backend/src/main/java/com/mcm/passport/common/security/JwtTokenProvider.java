@@ -13,10 +13,8 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    // application.yml의 jwt.secret 기본값 — JWT_SECRET 환경변수가 없으면 이 값으로 떨어진다. 이
-    // 문자열 자체가 이 저장소 히스토리에 그대로 공개돼 있으므로, 배포 환경이 이 값을 그대로 쓰면
-    // 누구나 임의의 accountId로 유효한 서명된 JWT를 위조해 완전한 계정 탈취가 가능하다 — 조용히
-    // 기본값을 쓰는 대신 시작 시점에 즉시 실패시킨다.
+    // application.yml의 jwt.secret 기본값. 저장소 히스토리에 그대로 공개된 문자열이라 배포 환경이
+    // 이걸 그대로 쓰면 누구나 JWT를 위조해 계정을 탈취할 수 있다 — 그래서 시작 시점에 바로 죽인다.
     private static final String PUBLIC_DEFAULT_SECRET_PLACEHOLDER =
         "change-this-secret-change-this-secret-32chars-min";
 

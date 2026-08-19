@@ -19,8 +19,7 @@ public interface DiagnosisRepository extends JpaRepository<Diagnosis, Long> {
     List<Diagnosis> findAllByPassportIdInOrderByDiagnosedAtDescIdDesc(List<Long> passportIds);
 
     // PassportService.list()와 NotificationService.generateReminders()가 똑같이 필요로 하던
-    // "여권 목록 -> 각 여권의 최신 진단" 배치 조회+매핑 로직을 한 곳으로 모은다(중복 시 한쪽만
-    // 고쳐지고 다른 쪽은 방치되는 사고를 막기 위함).
+    // "여권 목록 -> 각 여권의 최신 진단" 배치 조회+매핑 로직을 한 곳으로 모은다(중복되면 한쪽만 고쳐지는 사고가 난다).
     default Map<Long, Diagnosis> findLatestByPassportIdIn(List<Long> passportIds) {
         if (passportIds.isEmpty()) {
             return Map.of();
