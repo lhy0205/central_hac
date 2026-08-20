@@ -31,8 +31,14 @@ export function titleFor(item: TimelineItem) {
       ? `예약 취소 · ${item.detail.storeName}`
       : `매장 케어 예약 · ${item.detail.storeName}`;
   if (item.type === "TRANSFER") return "여권 승계 완료";
+  /* 기록 추가 화면은 제목과 메모를 "제목\n메모" 한 덩어리로 보낸다 — 서버 note 필드가
+     하나뿐이라서다. 첫 줄만 제목으로 쓴다. 통째로 쓰면 아래 본문과 같은 글이 두 번 나온다. */
   return (
-    String(item.detail.note ?? "") || EVENT_TYPE_LABEL[String(item.detail.eventType)] || "기록"
+    String(item.detail.note ?? "")
+      .split("\n")[0]
+      .trim() ||
+    EVENT_TYPE_LABEL[String(item.detail.eventType)] ||
+    "기록"
   );
 }
 
@@ -43,8 +49,13 @@ export function noteFor(item: TimelineItem) {
   const detail = item.detail as Record<string, unknown>;
 
   if (item.type === "USER_EVENT") {
-    const note = String(detail.note ?? "").trim();
-    return note || EVENT_TYPE_LABEL[String(detail.eventType)] || "기록";
+    // 첫 줄은 제목으로 이미 위에 나갔으니 본문은 그다음 줄부터다.
+    const body = String(detail.note ?? "")
+      .split("\n")
+      .slice(1)
+      .join("\n")
+      .trim();
+    return body || "적어 둔 메모가 없습니다.";
   }
 
   if (item.type === "DIAGNOSIS") {

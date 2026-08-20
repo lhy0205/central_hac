@@ -245,7 +245,8 @@ export default function ARResultScreen({
           )}
         </ScrollView>
 
-        <View style={styles.navRowSheet}>
+        {/* 시트가 화면 맨 아래에 붙어 있어, 버튼이 내비게이션 바에 물린다. 그만큼만 띄운다. */}
+        <View style={[styles.navRowSheet, { paddingBottom: insets.bottom + spacing.md }]}>
           <Pressable
             style={({ pressed }) => [
               styles.navButton,
@@ -328,7 +329,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     opacity: 0.35,
   },
-  sheetScroll: { flexGrow: 0 },
+  /* 시트는 높이가 고정(화면의 62%)이고 overflow가 hidden이다. 여기서 flexGrow를 0으로 두면
+     스크롤뷰가 내용 높이만큼 그대로 자라서, 내용이 길면 아래 버튼 줄을 시트 밖으로 밀어낸다 —
+     그래서 "다시 스캔하기/홈으로 가기"가 반쯤 잘려 보였다. 남은 공간만 차지하고 안에서
+     스크롤하도록 flex를 준다. 버튼 줄은 언제나 시트 안에 남는다. */
+  sheetScroll: { flex: 1 },
   sheetContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md, gap: spacing.md },
 
   storyBox: {

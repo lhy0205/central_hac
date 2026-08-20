@@ -2,6 +2,7 @@
 import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Easing,
   Image,
@@ -177,6 +178,31 @@ export default function Passport() {
     );
   }
 
+  /* 기록 삭제. 별도 화면으로 보내면 도장을 눌러 연 흐름이 끊긴다 — 여기서 지운다. */
+  function confirmDelete(eventId: string) {
+    Alert.alert("기록 삭제", "이 기록을 삭제할까요?", [
+      { text: "취소" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await journeyApi.remove(eventId);
+            closeStamp();
+            // 이 화면은 포커스될 때만 다시 읽는다. 화면을 옮기지 않으므로 목록에서 직접 뺀다.
+            setItems((current) =>
+              current.filter(
+                (entry) => !(entry.type === "USER_EVENT" && String(entry.id) === eventId),
+              ),
+            );
+          } catch {
+            Alert.alert("삭제 실패", "기록을 삭제하지 못했습니다.");
+          }
+        },
+      },
+    ]);
+  }
+
   const mapHeight = nodePos(Math.max(items.length - 1, 0), mapWidth).y + 110;
   const opened = openIndex != null ? items[openIndex] : null;
 
@@ -324,7 +350,28 @@ export default function Passport() {
                 ]}
               >
                 <Text style={styles.detailDate}>{stampDate(opened.occurredAt)}</Text>
-                <Text style={styles.detailTitle}>{titleFor(opened)}</Text>
+                <View style={styles.titleRow}>
+                  <Text style={styles.detailTitle}>{titleFor(opened)}</Text>
+                  {opened.type === "USER_EVENT" ? (
+                    <View style={styles.recordTools}>
+                      <Pressable
+                        hitSlop={8}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/journey/detail",
+                            params: { id: String(opened.id), passportId: id },
+                          })
+                        }
+                      >
+                        <Text style={styles.toolText}>수정</Text>
+                      </Pressable>
+                      <Text style={styles.toolDivider}>·</Text>
+                      <Pressable hitSlop={8} onPress={() => confirmDelete(String(opened.id))}>
+                        <Text style={[styles.toolText, styles.toolDanger]}>삭제</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+                </View>
               </Animated.View>
             </View>
 
@@ -348,7 +395,7 @@ export default function Passport() {
               >
                 <Text style={styles.outlineText}>여권으로 돌아가기</Text>
               </Pressable>
-              {DETAIL_ROUTE[opened.type] ? (
+              {DETAIL_ROUTE[opened.type] && opened.type !== "USER_EVENT" ? (
                 <Pressable
                   onPress={() =>
                     router.push({
@@ -416,6 +463,12 @@ const styles = StyleSheet.create({
     transformOrigin: "left center",
   },
   node: { position: "absolute" },
+
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  recordTools: { flexDirection: "row", alignItems: "center", gap: 7, marginLeft: "auto" },
+  toolText: { fontSize: 11.5, color: colors.brown },
+  toolDivider: { fontSize: 11.5, color: "#CFCFCF" },
+  toolDanger: { color: "#A04747" },
 
   actions: { flexDirection: "row", gap: 10, marginTop: 26 },
   outline: {

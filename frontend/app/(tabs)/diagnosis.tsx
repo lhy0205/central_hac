@@ -41,6 +41,8 @@ function DiagnosisHeader({ onBack }: { onBack: () => void }) {
 
 export default function Diagnosis() {
   const bottomPad = useTabBarClearance(24);
+  // 안내 시트는 화면 바닥에 붙으므로, CTA가 탭바 아이콘에 닿지 않게 더 띄운다.
+  const sheetPad = useTabBarClearance(44);
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [passport, setPassport] = useState<PassportSummary | null>(null);
   const [passports, setPassports] = useState<PassportSummary[]>([]);
@@ -309,7 +311,7 @@ export default function Diagnosis() {
       {showIntro ? (
         <View style={styles.introLayer}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowIntro(false)} />
-          <View style={[styles.introSheet, { paddingBottom: bottomPad }]}>
+          <View style={[styles.introSheet, { paddingBottom: sheetPad }]}>
             <View style={styles.introGrip} />
             <Text style={styles.introTitle}>AI 마모 진단</Text>
             <Text style={styles.introDesc}>

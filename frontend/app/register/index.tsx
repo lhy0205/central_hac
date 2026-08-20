@@ -75,6 +75,8 @@ export default function Register() {
   } = useLocalSearchParams<{ step?: string; model?: string; pending?: string }>();
   // 등록 화면엔 탭바가 없다. 시트·본문 하단이 내비게이션 바에 물리지 않게만 띄운다.
   const bottomPad = insets.bottom + 24;
+  // 바닥에 붙는 시트는 CTA가 내비게이션 바에 바짝 붙지 않게 더 띄운다.
+  const sheetPad = insets.bottom + 40;
   const [step, setStep] = useState<Step>(entryStep === "scan" ? "scan" : "choose");
   const [intro, setIntro] = useState(entryStep !== "scan");
 
@@ -598,7 +600,7 @@ export default function Register() {
       {intro && step === "choose" ? (
         <View style={styles.introLayer}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setIntro(false)} />
-          <View style={[styles.introSheet, { paddingBottom: bottomPad }]}>
+          <View style={[styles.introSheet, { paddingBottom: sheetPad }]}>
             <View style={styles.introGrip} />
             <Text style={styles.introTitle}>제품 등록</Text>
             <Text style={styles.introDesc}>

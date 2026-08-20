@@ -41,7 +41,8 @@ function formatDate(value?: string) {
 
 export default function Home() {
   const insets = useSafeAreaInsets();
-  const dockBottom = useTabBarClearance(14);
+  // 카드가 탭바 아이콘에 바짝 붙지 않도록 한 뼘 띄운다.
+  const dockBottom = useTabBarClearance(30);
   const { setTabBarHidden } = useChrome();
   const [bags, setBags] = useState<BagCard[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
