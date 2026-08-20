@@ -8,7 +8,7 @@ export const colors = {
   muted: "#999",
   ivory: "#F6EFE1",
   danger: "#A04747",
-  // 리디자인에서 추가된 색. 스탬프 잉크/도장 종이/골드 그라데이션 계열.
+
   ink: "#9A6F3E",
   inkLocked: "#BFBFC7",
   stampPaper: "#FDFBF6",
@@ -18,8 +18,6 @@ export const colors = {
   night: "#150E06",
 };
 
-/* 진단 등급별 색. 홈 카드 테두리와 여권 배지가 같은 값을 쓴다.
-   진단 전(null)은 회색으로 떨어뜨려 "아직 판정 없음"을 색으로도 구분한다. */
 export const GRADE_COLORS: Record<string, string> = {
   S: "#1F7A5C",
   A: "#4C9F70",
@@ -30,13 +28,11 @@ export const GRADE_COLORS: Record<string, string> = {
 export function gradeColor(grade: string | null | undefined) {
   return grade ? (GRADE_COLORS[grade] ?? colors.line) : "#DADADA";
 }
-/* 백엔드 OverallGrade가 S/A/B/C/D를 그대로 내려준다. 한글 라벨을 따로 두지 않는다 —
-   진단 결과 화면이 이미 글자 등급으로 차트를 그리므로 목록만 한글로 바꾸면 표기가 갈린다. */
+
 export function gradeLabel(grade: string | null | undefined) {
   return grade ?? null;
 }
-// app/diagnosis/result.tsx가 이 이름으로 가져다 쓴다. gradeLabel과 동작이 같아져서
-// 별칭만 남긴다.
+
 export const displayGrade = gradeLabel;
 export const common = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fff" },

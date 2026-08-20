@@ -33,8 +33,6 @@ export default function Account() {
         setLoadError(null);
       })
       .catch((error) => {
-        // 체험 모드에서만 예시 값을 쓴다. 실제 사용자에게까지 가짜 신원을 채우면 본인확인
-        // 가드가 placeholder끼리 비교해 통과하고, 진짜 비밀번호가 남의 이메일로 전송된다.
         if (isDemo) {
           setAccount({ id: 0, email: "user@example.com", nickname: "닉네임", createdAt: "" });
           setCurrentId("user@example.com");
@@ -106,8 +104,6 @@ export default function Account() {
       return;
     }
 
-    // 백엔드에 아이디/이메일 변경 엔드포인트가 아직 없다(updateMe는 nickname만 받음) —
-    // "요청 완료"를 띄우면 사용자가 바뀐 줄 알고 그 아이디로 로그인을 시도하니 미지원임을 알린다.
     Alert.alert(
       "아직 지원하지 않는 기능",
       `${step === "email" ? "이메일" : "아이디"} 변경은 서버 API가 준비되면 제공될 예정입니다. 입력하신 ${value}(으)로는 아직 변경되지 않았습니다.`,

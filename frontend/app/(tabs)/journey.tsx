@@ -19,8 +19,6 @@ import { colors, gradeLabel } from "../../src/theme";
 const bagImage = require("../../assets/mcm-bag.png");
 const CARD_WIDTH = Dimensions.get("window").width - 40;
 
-/* 여권 탭은 가방을 좌우로 넘겨 고르는 화면이다. 고른 가방의 "여권 보기"를 누르면
-   3D 스탬프 맵(journey/passport)으로 들어간다. */
 export default function JourneyTab() {
   const bottomPad = useTabBarClearance(20);
   const [passports, setPassports] = useState<PassportSummary[] | null>(null);
@@ -31,7 +29,7 @@ export default function JourneyTab() {
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      /* 실패를 빈 배열로 삼키면 빈 상태 UI가 떠서 통신 오류를 "제품 없음"으로 단정해 보여준다. */
+
       productApi
         .list(0, 100)
         .then((page) => {

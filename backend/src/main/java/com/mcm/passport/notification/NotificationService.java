@@ -85,15 +85,13 @@ public class NotificationService {
                 "마모가 진행되고 있어요. 셀프케어 가이드를 확인해보세요.", overallScore);
             case D -> create(passport.getId(), NotificationType.STORE_SERVICE, reasonFactors,
                 "상태가 심각해요. 공식 서비스 예약을 고려해보세요.", overallScore);
-            // S/A/B는 예전 GOOD에 해당하는 구간이라 알림을 만들지 않는다.
+
             case S, A, B -> {
             }
         }
         evaluateRepurchase(passport, diagnosis, reasonFactors, overallScore);
     }
 
-    // 재구매 제안(FR-NOT-03/06). Care-First 원칙에 따라 "장기 소유 AND D등급 반복" 둘 다
-    // 만족할 때만 만든다 — 오래 썼다는 이유만으로 권하면 케어 우선이라는 원칙과 어긋난다.
     private void evaluateRepurchase(Passport passport, Diagnosis diagnosis,
                                      Map<String, Object> reasonFactors, Integer overallScore) {
         if (diagnosis.getOverallGrade() != OverallGrade.D) return;
@@ -102,7 +100,6 @@ public class NotificationService {
         if (ownershipDays < repurchaseOwnershipDays) return;
         if (countTrailingUrgentDiagnoses(passport.getId()) < repurchaseConsecutiveUrgent) return;
 
-        // 조건을 만족하는 동안은 진단할 때마다 계속 뜨게 되므로, 다른 알림과 같은 쿨다운을 건다.
         LocalDateTime cooldownStart = LocalDateTime.now(clock).minusDays(reminderCooldownDays);
         if (notificationRepository.existsByPassportIdAndTypeAndCreatedAtAfter(
                 passport.getId(), NotificationType.REPURCHASE, cooldownStart)) {
@@ -116,7 +113,6 @@ public class NotificationService {
             overallScore);
     }
 
-    /** 최신 진단부터 거슬러 올라가며 연속으로 D등급인 횟수를 센다(D가 아닌 진단을 만나면 멈춤). */
     private int countTrailingUrgentDiagnoses(Long passportId) {
         List<Diagnosis> recent = diagnosisRepository
             .findAllByPassportIdOrderByDiagnosedAtDescIdDesc(
@@ -130,7 +126,6 @@ public class NotificationService {
         return count;
     }
 
-    // journeyAlertsEnabled/marketingAlertsEnabled는 대응하는 알림 타입이 없어 게이팅하지 않는다.
     private boolean isCareAlertsEnabled(Passport passport) {
         return accountRepository.findById(passport.getOwnerAccountId())
             .map(Account::isCareAlertsEnabled)
@@ -149,7 +144,6 @@ public class NotificationService {
 
         Map<Long, Diagnosis> latestDiagnosisByPassportId = diagnosisRepository.findLatestByPassportIdIn(passportIds);
 
-        // 루프 안에서 계정을 한 건씩 조회하면 N+1이 되므로 한 번에 배치 조회해 맵으로 만든다.
         List<Long> ownerAccountIds = activePassports.stream().map(Passport::getOwnerAccountId).distinct().toList();
         Map<Long, Boolean> careAlertsEnabledByAccountId = ownerAccountIds.isEmpty()
             ? Map.of()
@@ -161,11 +155,7 @@ public class NotificationService {
             ? Set.of()
             : new HashSet<>(notificationRepository.findPassportIdsByTypeAndCreatedAtAfter(
                 NotificationType.SELF_CARE, cooldownStart));
-        // 알려진 한계: ShedLock lockAtMostFor(10분)가 만료돼 배치가 겹쳐 돌면 서로의 커밋 전 insert가
-        // 안 보여 SELF_CARE가 중복 생성될 수 있다. 30일 슬라이딩 윈도우라 유니크 제약으로는 못 막고, 계정 잠금은 과해서 안 건다.
 
-        // 스케줄러가 하루 걸러도 마일스톤을 놓치지 않도록 보낸 마일스톤 "값"을 집합으로 모아
-        // 지나친 것 중 미발송분만 따라잡는다. 개수만 세면 중복 발송 한 번에 이후 마일스톤이 영구히 스킵된다.
         Map<Long, Set<Integer>> milestoneDaysSentByPassportId = new HashMap<>();
         if (!passportIds.isEmpty()) {
             for (Notification n : notificationRepository.findAllByPassportIdInAndType(passportIds, NotificationType.MILESTONE)) {
@@ -178,8 +168,6 @@ public class NotificationService {
             }
         }
 
-        // 스냅샷 이후 삭제된 여권에 알림이 생기지 않도록 생성 직전에 한 번 더 확인한다. 배치가
-        // 도는 내내 전부 잠그는 건 과해서 창을 좁히는 선에서 그친다.
         Set<Long> stillActivePassportIds = passportIds.isEmpty()
             ? Set.of()
             : new HashSet<>(passportRepository.findIdsByStatus(PassportStatus.ACTIVE));
@@ -210,8 +198,7 @@ public class NotificationService {
 
     public Page<NotificationResponse> list(Long passportId, Long requesterAccountId, Pageable pageable) {
         assertOwnership(passportId, requesterAccountId);
-        // generateReminders()가 한 트랜잭션에서 만든 알림들은 Postgres now()가 트랜잭션당 고정이라
-        // created_at이 정확히 같을 수 있다. Reservation/CareRecord/Passport.list()와 같은 방식으로 id를 타이브레이커로 덧붙인다.
+
         Pageable stablePageable = PageRequest.of(
             pageable.getPageNumber(), pageable.getPageSize(),
             pageable.getSort().and(Sort.by(Sort.Direction.ASC, "id")));

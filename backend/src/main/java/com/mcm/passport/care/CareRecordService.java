@@ -28,17 +28,13 @@ public class CareRecordService {
     private final ImageStorageService imageStorageService;
     private final PassportOwnershipGuard passportOwnershipGuard;
 
-    // PassportService.register()/DiagnosisService.submit()과 같은 이유로 업로드를 클래스 레벨
-    // @Transactional 밖으로 뺀다 — Spring Data 리포지토리 메서드는 각자 트랜잭션을 가지므로 원자성은 유지된다.
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public CareRecordResponse create(Long passportId, Long requesterAccountId,
                                       CreateCareRecordRequest request, MultipartFile image) {
         getOwnedPassport(passportId, requesterAccountId);
         String imageUrl = image != null && !image.isEmpty() ? imageStorageService.upload(image) : null;
         try {
-            // 업로드가 오래 걸리는 사이 탈퇴/소유권 변경이 있었을 수 있어 저장 직전에 다시 확인한다.
-            // 이 재확인도 try 안에 있어야 여기서 나는 예외까지 아래 catch의 고아 이미지 정리를 거친다.
-            // 잠금을 걸지 않는 이유는 DiagnosisService.submit()의 같은 지점 주석 참고.
+
             Passport passport = getOwnedPassport(passportId, requesterAccountId);
             CareRecord record = new CareRecord(passport.getId(), request.careType(), request.materialType(),
                 request.notes(), imageUrl, request.completedAt());
@@ -57,8 +53,7 @@ public class CareRecordService {
 
     public Page<CareRecordResponse> list(Long passportId, Long requesterAccountId, Pageable pageable) {
         getOwnedPassport(passportId, requesterAccountId);
-        // completedAt은 사용자가 직접 입력하는 값이라 동시각 충돌 가능성이 낮지 않다 — 타이브레이커
-        // 없이는 페이지 간 순서가 불안정해질 수 있어 id를 덧붙인다.
+
         Pageable stablePageable = PageRequest.of(
             pageable.getPageNumber(), pageable.getPageSize(),
             pageable.getSort().and(Sort.by(Sort.Direction.ASC, "id")));

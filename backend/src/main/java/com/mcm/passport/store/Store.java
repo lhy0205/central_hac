@@ -11,8 +11,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalTime;
 
-// 매장 CRUD API는 없다(기획서 3.8절, 확정) — 이 엔티티는 시드 마이그레이션으로만 채워지고
-// 앱 코드에서는 읽기 전용으로만 쓰인다.
 @Entity
 @Table(name = "store")
 @Getter

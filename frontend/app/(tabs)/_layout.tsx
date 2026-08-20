@@ -2,9 +2,6 @@ import { Tabs } from "expo-router";
 
 import { TabBarView, TABS, type TabKey } from "../../src/components/BottomTabBar";
 
-// 탭바는 화면 위에 떠 있는 알약 모양이라 기본 tabBar를 쓰지 않는다.
-// 그리는 일은 TabBarView가 전담하고(스택 화면의 BottomTabBar와 공유), 여기서는
-// 눌린 탭을 네비게이션에 연결만 한다.
 export default function Layout() {
   return (
     <Tabs

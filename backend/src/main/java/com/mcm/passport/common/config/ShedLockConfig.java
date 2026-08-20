@@ -8,8 +8,6 @@ import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
 
-// ReminderScheduler 같은 @Scheduled 배치가 다중 인스턴스로 겹쳐 돌면 알림이 중복 생성될 수 있다
-// — DB 행 잠금 기반 분산 락으로 한 번에 하나만 돌게 막는다.
 @Configuration
 @EnableSchedulerLock(defaultLockAtMostFor = "PT10M")
 public class ShedLockConfig {

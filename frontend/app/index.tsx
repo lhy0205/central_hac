@@ -10,8 +10,6 @@ import { useAuth } from "../src/context/AuthContext";
 
 const SPLASH_MS = 2300;
 
-/* 앱 첫 화면. 네이티브 스플래시가 걷힌 뒤 이 브랜드 스플래시가 잠깐 재생되고,
-   로딩 바가 다 차면 로그인 여부에 따라 홈이나 시작 화면으로 넘어간다. */
 export default function Index() {
   const insets = useSafeAreaInsets();
   const { ready, token } = useAuth();
@@ -40,7 +38,6 @@ export default function Index() {
       <StatusBar style="light" />
       <BrandBackdrop />
       <BrandMark style={styles.mark} />
-      {/* 문구와 로딩 바가 화면 바닥에 붙어 고개를 숙여야 읽혔다. 안전영역 위로 더 띄운다. */}
       <View style={[styles.bottom, { bottom: insets.bottom + 96 }]}>
         <Text style={styles.copy}>2026 가을 컬렉션{"\n"}지금 만나보세요</Text>
         <View style={styles.track}>

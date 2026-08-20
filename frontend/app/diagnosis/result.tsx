@@ -12,7 +12,7 @@ import {
 } from "../../src/api/client";
 import { common, colors, displayGrade } from "../../src/theme";
 const bag = require("../../assets/mcm-bag.png");
-// S가 최상, D가 최하 — 인덱스가 곧 추이 그래프의 세로 위치와 등급 하락/상승 판정 기준이 된다.
+
 const GRADE_ORDER = ["S", "A", "B", "C", "D"];
 const ROW_H = 24;
 const COL_W = 46;
@@ -99,11 +99,11 @@ function compareText(prev: DiagnosisDetail, current: DiagnosisDetail) {
         : "동일 유지";
   return `이전 진단 대비 ${displayGrade(prev.overallGrade)}→${displayGrade(current.overallGrade)}, ${days}일 만에 ${direction}`;
 }
-// 팀 색상 팔레트(theme.ts) 안에서만 골라 쓴다 — 새 색을 늘리면 앱 전체 톤과 어긋난다.
+
 function gradeColor(grade: string | null | undefined) {
   if (grade === "S" || grade === "A") return colors.gold;
   if (grade === "B") return colors.brown;
-  return colors.danger; // C, D
+  return colors.danger;
 }
 function scoreColor(score: number) {
   if (score >= 70) return colors.danger;
@@ -111,7 +111,6 @@ function scoreColor(score: number) {
   return colors.gold;
 }
 export default function Result() {
-  // common.content의 100은 떠 있는 탭바보다 낮아 아래 내용이 가린다.
   const bottomPad = useTabBarClearance(20);
   const { id, passportId } = useLocalSearchParams<{ id?: string; passportId?: string }>();
   const [list, setList] = useState<DiagnosisDetail[]>([]);

@@ -19,17 +19,10 @@ const EVENT_TYPE_MAP: Record<string, "MOMENT" | "STORE_VISIT" | "SELF_CARE" | "O
   기타: "OTHER",
 };
 
-// Date.toISOString()은 UTC로 변환하므로 KST 등 UTC보다 앞선 시간대에서는 실제 로컬 날짜보다
-// 하루 이른 값이 나올 수 있다 — 로컬 필드를 직접 조합해서 피한다.
 function isoDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
-// 서버는 eventDate를 @PastOrPresent LocalDateTime으로 검증하는데, 그 "지금"은 서버 JVM의
-// 기본 시간대(현재 컨테이너는 UTC) 기준이다. 기기의 KST 벽시계 시각을 그대로 보내면 서버 눈에는
-// 9시간 뒤 미래라 항상 400이 났다.
-//  - 오늘이면 아예 안 보낸다. TimelineEvent.prePersist가 서버 시계로 채워주므로 시간대와 무관하다.
-//  - 과거 날짜면 어느 시간대에서 봐도 과거인 정오로 보낸다. T00:00:00으로 고정하면 같은 날
-//    실제 생성 시각을 쓰는 다른 기록(진단·케어)보다 타임라인에서 항상 앞에 와버린다.
+
 function eventDateFor(dateStr: string) {
   return dateStr === isoDate(new Date()) ? undefined : `${dateStr}T12:00:00`;
 }
@@ -84,7 +77,6 @@ export default function Add() {
     if (fileError) return Alert.alert("파일 확인", fileError);
     setSaving(true);
     try {
-      // 백엔드 eventDate는 LocalDateTime이라 날짜만 있는 문자열은 파싱에 실패한다(400) — 시각을 붙여 보낸다.
       await journeyApi.create(
         id,
         {
@@ -96,7 +88,6 @@ export default function Add() {
       );
       router.replace({ pathname: "/journey/passport", params: { id } });
     } catch (error) {
-      // 통째로 삼키면 권한·시간대·네트워크 어느 쪽이 문제인지 알 수가 없다.
       Alert.alert(
         "저장 실패",
         error instanceof ApiError ? error.message : "기록 저장에 실패했습니다.",
@@ -168,7 +159,6 @@ export default function Add() {
         </Pressable>
         {showDates && (
           <View style={styles.dateMenu}>
-            {/* 최근 7일 목록 대신 달력에서 고른다 — 오래전 일도 기록할 수 있어야 한다. */}
             <Calendar
               disabledDates={(iso) => iso > isoDate(new Date())}
               onSelect={(value) => {

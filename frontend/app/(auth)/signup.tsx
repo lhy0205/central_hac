@@ -16,7 +16,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiError, authApi } from "../../src/api/client";
 import { BrandBackdrop, BrandMark } from "../../src/components/BrandBackdrop";
 
-/* 로그인과 같은 배경 영상 위에 올라간다. */
 export default function Signup() {
   const insets = useSafeAreaInsets();
   const [nickname, setNickname] = useState("");

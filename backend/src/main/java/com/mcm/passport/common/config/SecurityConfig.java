@@ -37,7 +37,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated())
             .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> {
                 res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                // charset을 빼면 서블릿 기본값(ISO-8859-1)으로 인코딩돼 한글이 전부 '?'로 나간다.
+
                 res.setContentType("application/json;charset=UTF-8");
                 res.getWriter().write("{\"code\":\"UNAUTHORIZED\",\"message\":\"인증이 필요합니다.\"}");
             }))

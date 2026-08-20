@@ -19,7 +19,6 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class CloudinaryImageStorageService implements ImageStorageService {
 
-    // Cloudinary secure_url 형식: https://res.cloudinary.com/{cloud}/image/upload/v{ver}/{public_id}.{ext}
     private static final Pattern PUBLIC_ID_PATTERN = Pattern.compile("/upload/(?:v\\d+/)?(.+)\\.[a-zA-Z0-9]+$");
 
     private final Cloudinary cloudinary;
@@ -38,9 +37,7 @@ public class CloudinaryImageStorageService implements ImageStorageService {
         } catch (ApiException e) {
             throw e;
         } catch (RuntimeException e) {
-            // Cloudinary SDK는 이미지가 아닌 파일에 IOException 대신 그냥
-            // RuntimeException("Invalid image file")을 던진다. 안 잡으면 500으로 새어나가서
-            // 사용자가 원인을 모른 채 같은 파일로 재시도하게 된다.
+
             String message = e.getMessage() == null ? "" : e.getMessage();
             if (message.toLowerCase().contains("invalid image")) {
                 log.warn("이미지가 아닌 파일 업로드 시도 (name={})", file.getOriginalFilename());

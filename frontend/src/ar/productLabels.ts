@@ -1,5 +1,3 @@
-// server/ar-identification의 탐지 모델(YOLOv8n, 17클래스) 라벨 -> 한글 표시명.
-// index 7(Clothing)은 모델 쪽에서 폐기·미사용(HANDOFF.md 참고)이라 여기 없음.
 export const PRODUCT_CLASS_LABELS: Record<string, string> = {
   Handbag: "핸드백",
   Backpack: "백팩",

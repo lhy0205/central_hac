@@ -12,12 +12,6 @@ import {
 
 import { recognizeSerial } from "./ocr";
 
-/* 일련번호 스캐너.
-   "사진을 한 장 찍어서 보낸다"가 아니라, 카메라를 계속 띄워 놓고 프레임을 주기적으로
-   OCR 서버에 보내다가 코드가 잡히면 멈춘다 — 사용자는 가방을 비추고 있기만 하면 된다.
-
-   OCR이 서버에 있어서 진짜 온디바이스 실시간 인식은 아니다. 매 프레임을 올리면 서버가
-   못 버티므로 한 번에 한 장씩만 올리고, 응답이 온 뒤에 다음 장을 찍는다. */
 const SCAN_INTERVAL_MS = 1200;
 
 export function SerialScanner({
@@ -29,7 +23,7 @@ export function SerialScanner({
 }) {
   const insets = useSafeAreaInsets();
   const device = useCameraDevice("back");
-  // VisionCamera는 CameraX를 비동기로 초기화해서 첫 렌더에서 device가 거의 항상 undefined다.
+
   const devices = useCameraDevices();
   const format = useCameraFormat(device, [{ photoResolution: { width: 1280, height: 720 } }]);
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -69,7 +63,6 @@ export function SerialScanner({
         return;
       }
     } catch {
-      // 한 번 실패했다고 스캔을 멈추면 안 된다 — 다음 프레임에서 다시 시도한다.
     } finally {
       if (!stopped.current) {
         setScanning(false);
@@ -78,7 +71,6 @@ export function SerialScanner({
     }
   }, [onFound, ready]);
 
-  // 한 장의 결과가 끝나면 잠깐 쉬었다가 다음 장을 찍는다.
   useEffect(() => {
     if (!ready || stopped.current) return;
     const timer = setTimeout(() => void scanOnce(), attempts === 0 ? 300 : SCAN_INTERVAL_MS);

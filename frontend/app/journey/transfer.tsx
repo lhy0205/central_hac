@@ -10,8 +10,6 @@ import { colors, gradeColor, gradeLabel } from "../../src/theme";
 
 const bag = require("../../assets/mcm-bag.png");
 
-// value는 시각 없는 날짜(LocalDate, "YYYY-MM-DD")다. new Date(value)로 바로 파싱하면 UTC
-// 자정으로 해석돼 KST 등에서 하루 적게 계산될 수 있다 — 로컬 자정 기준으로 직접 구성한다.
 function daysSince(value: string) {
   const [y, m, d] = value.slice(0, 10).split("-").map(Number);
   return Math.max(0, Math.floor((Date.now() - new Date(y, m - 1, d).getTime()) / 86400000));
@@ -26,8 +24,6 @@ export default function TransferPassport() {
   const [loading, setLoading] = useState(true);
   const [issuing, setIssuing] = useState(false);
 
-  /* 코드를 먼저 뽑아 두면 "아니요"를 눌러도 이미 발급된 코드가 남는다.
-     제품이 맞는지 확인받은 뒤에 발급한다. */
   useEffect(() => {
     if (!id) return;
     let active = true;
@@ -68,7 +64,6 @@ export default function TransferPassport() {
           <ActivityIndicator color={colors.brown} />
         </View>
       ) : code == null ? (
-        /* 1) 승계할 제품이 맞는지 확인 */
         <View style={styles.center}>
           <View style={styles.dialog}>
             <Text style={styles.dialogTitle}>승계하려는 제품이 맞나요?</Text>
@@ -105,7 +100,6 @@ export default function TransferPassport() {
           </View>
         </View>
       ) : (
-        /* 2) 확인이 끝나면 승계 코드를 보여준다 */
         <View style={[styles.content, { paddingBottom: bottomPad }]}>
           <Text style={styles.title}>여권 승계</Text>
           <View style={styles.rule} />

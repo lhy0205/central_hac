@@ -1,6 +1,3 @@
-// AR 결과 화면에서 보여줄 카테고리별 스토리 문구.
-// 키는 탐지 모델(YOLOv8n)의 클래스명 — productLabels.ts의 PRODUCT_CLASS_LABELS와 같은 집합이다.
-// 730 SKU 개별 제품 스토리는 아직 없어서, 우선 카테고리 단위 문구로 채운 목데이터다.
 export interface StoryEntry {
   emoji: string;
   story: string;

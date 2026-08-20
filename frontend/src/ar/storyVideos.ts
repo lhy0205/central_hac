@@ -1,6 +1,3 @@
-// AR 결과 화면에서 카테고리별로 보여줄 실제 촬영 영상.
-// 가방류(핸드백/백팩/지갑/벨트/선글라스)는 촬영본이 풍부하고, 신발/캐리어는 각 2개,
-// 스카프는 1개. 나머지 의류 카테고리는 촬영본이 없어 placeholder로 대체한다.
 const PLACEHOLDER = require("../../assets/ar/story_placeholder.mp4");
 
 const BAG_VIDEOS = [
@@ -29,7 +26,6 @@ const SUITCASE_VIDEOS = [
   require("../../assets/ar/videos/suitcase2.mp4"),
 ];
 
-// 탐지 클래스 -> 영상 풀. 여기 없는 클래스(의류 등)는 placeholder를 쓴다.
 const VIDEO_POOLS: Record<string, unknown[]> = {
   Handbag: BAG_VIDEOS,
   Backpack: BAG_VIDEOS,
@@ -41,8 +37,6 @@ const VIDEO_POOLS: Record<string, unknown[]> = {
   Suitcase: SUITCASE_VIDEOS,
 };
 
-// 같은 제품이면 항상 같은 영상이 나오도록(재조회 시 매번 바뀌면 어색하다), productId 등
-// 안정적인 키를 해시해 풀 안에서 하나를 고른다.
 function pick<T>(pool: T[], seed: string): T {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;

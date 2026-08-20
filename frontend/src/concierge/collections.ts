@@ -1,21 +1,14 @@
-/* Concierge(구매 전)가 보여주는 컬렉션 이야기.
-
-   백엔드 MVP 범위 밖이라 데이터는 앱 안에 둔다. 카탈로그 API에 컬렉션 서사가 생기면
-   이 파일만 갈아 끼우면 된다 — register/catalog.ts와 같은 방식이다.
-
-   영상은 AR 스토리용으로 이미 번들에 들어 있는 파일을 재사용한다. 새 에셋을 넣으면
-   APK가 그만큼 커지는데, 같은 브랜드 영상이라 굳이 중복해서 담을 이유가 없다. */
 export type Collection = {
   id: string;
   video: NodeRequire;
   kicker: string;
   title: string;
   caption: string;
-  /* 카드에 한 줄로 걸리는 요약. 상세에서는 story가 대신 나온다. */
+
   summary: string;
   story: string;
   facts: string[];
-  /* 이 이야기와 이어지는 카탈로그 제품 이름. 관심 등록이 이 이름으로 예비 여권을 만든다. */
+
   product: string;
 };
 

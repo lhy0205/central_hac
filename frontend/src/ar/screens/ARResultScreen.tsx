@@ -18,7 +18,6 @@ import { getProductClassLabel } from "../productLabels";
 import { getStory } from "../storyData";
 import { getStoryVideo } from "../storyVideos";
 
-// AR 스캔이 겨냥하는 제품군(탐지 모델 17클래스 중). 나머지(의류·신발 등)는 대표 탐지로 올리지 않는다.
 const BAG_FAMILY = new Set(["Handbag", "Backpack", "Suitcase", "Wallet"]);
 
 const HANDLE_HEIGHT = 40;
@@ -39,14 +38,11 @@ export default function ARResultScreen({
 }) {
   const insets = useSafeAreaInsets();
   const windowHeight = useWindowDimensions().height;
-  // PEEK_HEIGHT에 하단 세이프에어리어를 더해야 한다 — 안 그러면 핸들이 화면 맨 아래에 붙어서
-  // 제스처 내비게이션 기기에서 터치가 시스템 제스처에 먼저 먹혀버린다.
+
   const SHEET_HEIGHT = Math.round(windowHeight * 0.62);
   const PEEK_HEIGHT = HANDLE_HEIGHT + insets.bottom + 12;
   const COLLAPSED_Y = SHEET_HEIGHT - PEEK_HEIGHT;
 
-  // 확신도 최댓값으로만 고르면 배경의 바지가 가방보다 점수가 높아서 바지 스토리가 뜨는
-  // 경우가 있다. 가방류를 먼저 우선하고, 그 안에서 확신도로 정렬한다.
   const primary =
     [...result.detections].sort((a, b) => {
       const aBag = BAG_FAMILY.has(a.class) ? 1 : 0;
@@ -57,18 +53,16 @@ export default function ARResultScreen({
   const topCandidate = primary?.candidates[0] ?? null;
   const isLowConfidence =
     topCandidate == null || topCandidate.similarity < IDENTIFY_CONFIDENCE_THRESHOLD;
-  // 탐지 자체가 실패하면 영상 없이 안내 문구만 보여준다.
+
   const story = primary != null ? getStory(primary.class) : null;
   const videoSource =
     primary != null ? getStoryVideo(primary.class, topCandidate?.productId ?? primary.class) : null;
 
-  // PanResponder 콜백 클로저는 최초 렌더 때 고정되므로 COLLAPSED_Y를 직접 담으면
-  // 인셋 갱신이 늦은 기기에서 stale 값을 쓴다. ref로 우회.
   const collapsedYRef = useRef(COLLAPSED_Y);
   collapsedYRef.current = COLLAPSED_Y;
 
   const translateY = useRef(new Animated.Value(COLLAPSED_Y)).current;
-  // 접혔을 때는 카드 배경이 반투명해서 뒤로 영상이 비치고, 위로 끌수록 흰색이 또렷해진다.
+
   const sheetBackdropOpacity = translateY.interpolate({
     inputRange: [0, COLLAPSED_Y],
     outputRange: [1, 0.32],
@@ -89,7 +83,7 @@ export default function ARResultScreen({
       },
       onPanResponderRelease: (_, gesture) => {
         const collapsedY = collapsedYRef.current;
-        // 드래그가 거의 없었으면(=탭) 현재 상태를 뒤집는다.
+
         const isTap = Math.abs(gesture.dy) < 6 && Math.abs(gesture.vy) < 0.1;
         const expand = isTap
           ? dragStartY.current > collapsedY / 2
@@ -150,8 +144,7 @@ export default function ARResultScreen({
 
   return (
     <View style={styles.container}>
-      {/* 전신 영상 화면이라 상태바도 밝게 — 다른 화면은 흰 배경이라 루트에서 dark로 고정해뒀는데
-          여기서만 덮어쓴다. 화면 벗어나면 자동 복귀. */}
+      {}
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <Video
         source={videoSource}
@@ -159,8 +152,7 @@ export default function ARResultScreen({
         resizeMode="cover"
         repeat
         muted
-        // 기본 SurfaceView는 루프마다 서페이스를 재할당해서 검은 프레임이 잠깐 끼어든다.
-        // TextureView는 뷰 계층 안에서 그려져서 그게 없다(안드로이드 전용).
+
         viewType={ViewType.TEXTURE}
       />
       <View style={styles.scrim} pointerEvents="none" />
@@ -245,7 +237,6 @@ export default function ARResultScreen({
           )}
         </ScrollView>
 
-        {/* 시트가 화면 맨 아래에 붙어 있어, 버튼이 내비게이션 바에 물린다. 그만큼만 띄운다. */}
         <View style={[styles.navRowSheet, { paddingBottom: insets.bottom + spacing.md }]}>
           <Pressable
             style={({ pressed }) => [
@@ -302,8 +293,6 @@ const styles = StyleSheet.create({
   },
   closeIconOnVideo: { fontSize: 17, color: "#fff" },
 
-  // 영상 위 바텀시트형 카드 패널. 처음엔 핸들만 보이게 접혀 있다가 위로 끌면 펼쳐진다 —
-  // translateY로 위치를 옮기므로 높이는 고정값이어야 한다.
   sheet: {
     position: "absolute",
     left: 0,
@@ -313,7 +302,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.lg,
     overflow: "hidden",
   },
-  // sheet 자체가 아니라 이 레이어의 불투명도만 애니메이션한다 — 핸들/텍스트는 항상 또렷해야 한다.
+
   sheetBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "#fff",
@@ -329,10 +318,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
     opacity: 0.35,
   },
-  /* 시트는 높이가 고정(화면의 62%)이고 overflow가 hidden이다. 여기서 flexGrow를 0으로 두면
-     스크롤뷰가 내용 높이만큼 그대로 자라서, 내용이 길면 아래 버튼 줄을 시트 밖으로 밀어낸다 —
-     그래서 "다시 스캔하기/홈으로 가기"가 반쯤 잘려 보였다. 남은 공간만 차지하고 안에서
-     스크롤하도록 flex를 준다. 버튼 줄은 언제나 시트 안에 남는다. */
+
   sheetScroll: { flex: 1 },
   sheetContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md, gap: spacing.md },
 

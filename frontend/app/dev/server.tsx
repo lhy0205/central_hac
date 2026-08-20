@@ -6,10 +6,6 @@ import { AppButton, Field, Header } from "../../src/components/UI";
 import { clearOverrides, getCurrentAddresses, setOverrides } from "../../src/config/serverAddress";
 import { common, colors } from "../../src/theme";
 
-/* 데모 중 서버 주소가 틀어졌을 때 앱을 재빌드/재설치하지 않고 그 자리에서 고치기 위한
-   비상용 화면. 프로필 화면의 제목을 길게 눌러야 열리므로 일반 사용자는 마주치지 않는다.
-   자세한 배경은 src/config/serverAddress.ts 주석 참고. */
-
 export default function DevServerAddress() {
   const [api, setApi] = useState("");
   const [ar, setAr] = useState("");

@@ -25,15 +25,6 @@ import { colors } from "../../src/theme";
 const bagImage = require("../../assets/mcm-bag.png");
 const { width: SCREEN_W } = Dimensions.get("window");
 
-/* Concierge — 구매 전 접점.
-
-   홈 검색바를 누르면 여기로 온다. 검색어가 비어 있으면 컬렉션 이야기를, 입력하면 제품
-   결과를 보여준다. 찾을 것이 정해지지 않은 사람과 정해진 사람이 같은 자리에서 갈라진다.
-
-   화면 전체가 영상이고 카드는 그 위에 반투명으로 뜬다. 카드가 불투명하면 영상이 그냥
-   배경 그림이 되지만, 비쳐 보이면 지금 읽는 이야기와 영상이 한 장면으로 읽힌다.
-   그래서 카드 안에 영상을 또 넣지 않는다 — 뒤에서 이미 재생되고 있고, 동시에 붙는
-   Video가 늘면 안드로이드 하드웨어 디코더가 모자라 앱이 그대로 죽는다. */
 export default function Concierge() {
   const insets = useSafeAreaInsets();
   const bottomPad = useTabBarClearance(16);
@@ -44,7 +35,6 @@ export default function Concierge() {
   const [opened, setOpened] = useState<Collection | null>(null);
   const [liked, setLiked] = useState<string[]>([]);
 
-  // 관심 등록은 기기에 남아 홈 "내 가방"에 예비 여권으로 선다. 화면에 들어올 때마다 맞춘다.
   useFocusEffect(
     useCallback(() => {
       void listPending().then((items) => setLiked(items.map((item) => item.id)));
@@ -57,19 +47,14 @@ export default function Concierge() {
     [term],
   );
 
-  // 한 장씩 넘어가므로 화면 폭이 곧 한 페이지다.
   const onPage = useRef(({ nativeEvent }: { nativeEvent: { contentOffset: { x: number } } }) => {
     setIndex(Math.round(nativeEvent.contentOffset.x / SCREEN_W));
   }).current;
 
   const activeCollection = COLLECTIONS[Math.min(index, COLLECTIONS.length - 1)];
-  // 이야기 상세가 열려 있으면 그쪽 영상이 배경이 된다. 붙는 Video는 언제나 한 개다.
+
   const background = opened ?? activeCollection;
 
-  /* 이야기 상세는 오른쪽으로 밀면 닫힌다. ✕만 있으면 읽던 자리에서 손을 크게 옮겨야 하고,
-     돌아가는 순간이 뚝 끊겨 보인다. 미는 만큼 따라 움직이다가 놓으면 마저 빠져나간다.
-     화면 가장자리에서 시작할 필요가 없게 둔 이유는, 안드로이드가 양쪽 가장자리 스와이프를
-     시스템 뒤로가기로 먼저 가져가기 때문이다. */
   const dragX = useRef(new Animated.Value(SCREEN_W)).current;
   const pan = useRef(
     PanResponder.create({
@@ -88,9 +73,6 @@ export default function Concierge() {
     }),
   ).current;
 
-  /* 상세가 목록 위에 덮이므로, 상세가 다 열린 동안에는 목록을 감춰야 한다. 반투명 베일만
-     두면 아래 검색바와 카드가 비쳐 글이 겹쳐 읽힌다. 미는 양에 맞춰 목록이 다시 드러나니
-     빠져나가는 느낌은 그대로다. */
   const listOpacity = dragX.interpolate({
     inputRange: [0, SCREEN_W],
     outputRange: [0, 1],
@@ -207,8 +189,7 @@ export default function Concierge() {
               </View>
             </View>
 
-            {/* 한 번에 한 장. 페이지 폭이 화면 폭이라 pagingEnabled가 그대로 맞는다.
-                  카드 아래는 탭바가 차지하는 만큼만 비워, 카드 끝이 아이콘 바로 위에 닿는다. */}
+            {}
             <FlatList
               data={COLLECTIONS}
               keyExtractor={(item) => item.id}
@@ -249,8 +230,7 @@ export default function Concierge() {
         )}
       </Animated.View>
 
-      {/* 이야기 상세. 새 라우트를 만들지 않고 목록 위에 덮는다. 오른쪽으로 밀면 미는 만큼
-          따라 빠져나가면서 아래 목록이 그대로 드러난다 — 돌아가는 순간이 끊기지 않는다. */}
+      {}
       {opened ? (
         <Animated.View
           style={[styles.detailLayer, { transform: [{ translateX: dragX }] }]}
@@ -307,7 +287,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.night },
   scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(12,8,4,0.42)" },
   layer: { flex: 1 },
-  /* 목록 위에 덮이므로 자기 베일을 갖는다. 투명하면 미는 동안 두 화면이 겹쳐 보인다. */
+
   detailLayer: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(12,8,4,0.34)" },
 
   topRow: {
@@ -356,7 +336,7 @@ const styles = StyleSheet.create({
 
   rail: { flex: 1 },
   page: { width: SCREEN_W, paddingHorizontal: 16 },
-  /* 반투명 유리판. 뒤 영상이 비쳐야 카드와 배경이 한 장면으로 읽힌다. */
+
   card: {
     flex: 1,
     borderRadius: 16,

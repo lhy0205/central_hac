@@ -2,12 +2,6 @@ import { StyleSheet, View } from "react-native";
 import { Text } from "./BrandText";
 import Svg, { Circle, G, Path } from "react-native-svg";
 
-// (tabs)/_layout.tsx의 실제 탭바와 BottomTabBar(탭 네비게이터 밖 화면용 대체 탭바)가
-// 똑같은 아이콘을 쓰도록 공유하는 파일.
-//
-// 예전에는 View를 겹쳐 그렸다 — borderRadius로 곡선을, rotate로 사선을 흉내 내는 식이라
-// 집 지붕이나 여행가방 화살표처럼 꺾이는 선은 원본 도안과 늘 조금씩 어긋났다. 지금은
-// react-native-svg가 들어와 있으므로(스탬프에서 이미 쓴다) 전부 패스로 그린다.
 export type IconProps = { color: string; focused: boolean };
 
 const BOX = 40;
@@ -15,10 +9,6 @@ const SIZE = 33;
 const VIEW_BOX = "0 0 24 24";
 const STROKE = 1.7;
 
-/* 도안이 24짜리 상자 안에서 17.2만 채우고 있어 아이콘이 작아 보였다. 20을 채우도록 키운다.
-   좌표를 하나씩 다시 계산하면 호의 반지름까지 어긋나기 쉬워, 가운데를 기준으로 통째로
-   확대한다. 선 굵기는 확대 배율만큼 미리 나눠 둔다 — 그래야 커진 뒤에도 굵기가 그대로다.
-   배율은 다섯 아이콘에 똑같이 건다. 각자 20에 맞추면 서로의 비례가 깨진다. */
 const SCALE = 20 / 17.2;
 const GROW = `translate(12 12) scale(${SCALE}) translate(-12 -12)`;
 const LINE = STROKE / SCALE;
@@ -41,7 +31,6 @@ export function HomeIcon({ color }: IconProps) {
     <View style={styles.iconBox}>
       <Svg width={SIZE} height={SIZE} viewBox={VIEW_BOX}>
         <G transform={GROW}>
-          {/* 지붕에서 벽, 바닥까지 한 붓으로 잇는다. 조각을 따로 두면 꼭짓점이 벌어진다. */}
           <Path
             d="M3.6 10.4 L12 3.6 L20.4 10.4 V20.2 H3.6 Z"
             stroke={color}
@@ -50,7 +39,6 @@ export function HomeIcon({ color }: IconProps) {
             strokeLinejoin="round"
             fill="none"
           />
-          {/* 바닥에 붙은 아치형 문 */}
           <Path
             d="M9.9 20.2 V15.9 a2.1 2.1 0 0 1 4.2 0 V20.2"
             stroke={color}
@@ -65,7 +53,6 @@ export function HomeIcon({ color }: IconProps) {
   );
 }
 
-// 네 모서리 브래킷 안에 AR 글자. 스캔 프레임을 축소한 형태다.
 export function ArIcon({ color }: IconProps) {
   return (
     <View style={styles.iconBox}>
@@ -84,13 +71,11 @@ export function ArIcon({ color }: IconProps) {
           />
         </G>
       </Svg>
-      {/* 글자는 SVG Text 대신 RN Text로 둔다 — 앱 글꼴이 그대로 적용돼 나머지 UI와 붙는다. */}
       <Text style={[styles.arText, { color }]}>AR</Text>
     </View>
   );
 }
 
-// 가운데 탭. 검은 원 위에 흰 돋보기가 올라간다(원 배경은 탭바가 그린다).
 export function DiagnosisIcon({ color }: IconProps) {
   return (
     <View style={styles.iconBox}>
@@ -117,13 +102,11 @@ export function DiagnosisIcon({ color }: IconProps) {
   );
 }
 
-// 여권 = 여행가방 + 떠나는 방향을 가리키는 화살표.
 export function JourneyIcon({ color }: IconProps) {
   return (
     <View style={styles.iconBox}>
       <Svg width={SIZE} height={SIZE} viewBox={VIEW_BOX}>
         <G transform={GROW}>
-          {/* 손잡이 */}
           <Path
             d="M9.4 6.2 V5.2 a1.6 1.6 0 0 1 1.6-1.6 h2 a1.6 1.6 0 0 1 1.6 1.6 v1"
             stroke={color}
@@ -132,7 +115,6 @@ export function JourneyIcon({ color }: IconProps) {
             strokeLinejoin="round"
             fill="none"
           />
-          {/* 가방 몸통 */}
           <Path
             d="M6 6.2 h12 a2.4 2.4 0 0 1 2.4 2.4 v9.4 a2.4 2.4 0 0 1 -2.4 2.4 h-12
              a2.4 2.4 0 0 1 -2.4 -2.4 v-9.4 a2.4 2.4 0 0 1 2.4 -2.4 z"
@@ -160,7 +142,6 @@ export function ProfileIcon({ color }: IconProps) {
       <Svg width={SIZE} height={SIZE} viewBox={VIEW_BOX}>
         <G transform={GROW}>
           <Circle cx={12} cy={8.4} r={4.1} stroke={color} strokeWidth={LINE} fill="none" />
-          {/* 어깨선. 양 끝을 닫지 않아야 원본처럼 열린 호로 보인다. */}
           <Path
             d="M4.6 20.4 a7.4 7.4 0 0 1 14.8 0"
             stroke={color}

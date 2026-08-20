@@ -34,13 +34,8 @@ const USAGE_OPTIONS: { label: string; value: UsageFrequency }[] = [
 ];
 const SERIAL_PATTERN = /^([A-Za-z]\d{4}|\d{4})$/;
 
-// 기준 사진은 부위별로 찍는다 — 이후 진단이 "어디가 얼마나 상했는지" 비교하는 기준점이 된다.
 const SHOTS = ["모서리", "손잡이", "바닥면", "금속 부자재"] as const;
 
-/* 화면 흐름
-   choose → (승계) transfer
-          → (신규) permission → scan → confirm | manual → model(1/5) → purchase(2/5)
-                    → receipt(3/5) → photos(4/5) → nickname(5/5) → done */
 type Step =
   | "choose"
   | "transfer"
@@ -65,32 +60,27 @@ const PROGRESS: Partial<Record<Step, number>> = {
 
 export default function Register() {
   const insets = useSafeAreaInsets();
-  /* 홈의 예비 여권 카드에서 "시리얼 스캔"으로 들어오면 안내 시트와 선택 단계를 건너뛰고
-     바로 카메라를 띄운다. 이미 무엇을 살지 정한 사람에게 처음부터 다시 묻지 않는다.
-     model은 모델 선택 단계에 미리 채워지고, pending은 등록이 끝나면 지울 예비 여권이다. */
+
   const {
     step: entryStep,
     model: entryModel,
     pending: pendingId,
   } = useLocalSearchParams<{ step?: string; model?: string; pending?: string }>();
-  // 등록 화면엔 탭바가 없다. 시트·본문 하단이 내비게이션 바에 물리지 않게만 띄운다.
+
   const bottomPad = insets.bottom + 24;
-  // 바닥에 붙는 시트는 CTA가 내비게이션 바에 바짝 붙지 않게 더 띄운다.
+
   const sheetPad = insets.bottom + 40;
   const [step, setStep] = useState<Step>(entryStep === "scan" ? "scan" : "choose");
   const [intro, setIntro] = useState(entryStep !== "scan");
 
-  // 승계
   const [code, setCode] = useState("");
   const [codeConfirm, setCodeConfirm] = useState("");
   const [transferLoading, setTransferLoading] = useState(false);
 
-  // 스캔 / 일련번호
   const [scannedSerial, setScannedSerial] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
   const [serialConfirm, setSerialConfirm] = useState("");
 
-  // 등록 정보
   const [modelName, setModelName] = useState(entryModel ?? "");
   const [search, setSearch] = useState("");
   const [purchaseDate, setPurchaseDate] = useState<string | null>(null);
@@ -184,7 +174,6 @@ export default function Register() {
       !storeSearch || store.name.includes(storeSearch) || store.address.includes(storeSearch),
   );
 
-  // 스캔은 카메라를 계속 띄워 놓고 자동으로 읽는다.
   if (step === "scan") {
     return (
       <SerialScanner
@@ -197,7 +186,6 @@ export default function Register() {
     );
   }
 
-  // 확인/직접입력은 스캔 화면 위에 시트로 올라간다.
   if (step === "confirm" || step === "manual") {
     return (
       <View style={styles.camera}>
@@ -459,7 +447,6 @@ export default function Register() {
             </Pressable>
             {showStores ? (
               <View style={styles.panel}>
-                {/* 지도 SDK가 아직 없어 매장 목록/검색으로 고른다. 좌표 필드가 생기면 지도로 대체. */}
                 <View style={styles.mapPlaceholder}>
                   <Text style={styles.mapText}>지도</Text>
                 </View>

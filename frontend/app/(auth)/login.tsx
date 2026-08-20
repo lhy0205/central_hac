@@ -16,7 +16,6 @@ import { ApiError } from "../../src/api/client";
 import { BrandBackdrop, BrandMark } from "../../src/components/BrandBackdrop";
 import { useAuth } from "../../src/context/AuthContext";
 
-/* 스플래시·시작 화면과 같은 배경 영상 위에 올라간다 — 로고는 위로 올라가고 폼이 아래에 붙는다. */
 export default function Login() {
   const auth = useAuth();
   const insets = useSafeAreaInsets();

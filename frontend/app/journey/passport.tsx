@@ -30,16 +30,12 @@ import { colors, gradeColor } from "../../src/theme";
 
 const bagImage = require("../../assets/mcm-bag.png");
 
-/* 스탬프 종류별로 원본을 보여주는 화면이 따로 있다. 요약만 띄우고 끝내면 진단 점수·사진 같은
-   원본 정보로 갈 길이 없어진다. 여기 없는 종류(등록·알림·승계)는 전용 화면이 아직 없다. */
 const DETAIL_ROUTE: Record<string, string> = {
   DIAGNOSIS: "/diagnosis/result",
   CARE: "/care/detail",
   USER_EVENT: "/journey/detail",
 };
 
-/* 스탬프가 클수록 한 화면에 두 개도 안 들어와, 스크롤 끝에서 늘 반쯤 잘린 도장이 보인다.
-   지도로 읽히려면 여러 개가 한눈에 들어와야 한다. */
 const STAMP_SIZE = 60;
 const NODE_GAP = 84;
 const MAP_TOP = 34;
@@ -47,13 +43,6 @@ const MAP_TOP = 34;
 const TILT_DEG = 13;
 const PERSPECTIVE = 1500;
 
-/* 지도를 눕히면 회전축을 기준으로 위는 멀어지고 아래는 가까워진다. 축을 위 모서리로 옮기려고
-   transformOrigin을 줬는데 이 환경에서는 먹지 않아 가운데를 축으로 돈다. 그래서 스탬프가
-   많을수록 지도 위쪽이 통째로 아래로 밀려 "N개의 여정 스탬프" 아래에 빈 칸이 생겼다
-   (18개 기준 101dp).
-
-   축을 옮기는 대신 밀리는 양을 직접 계산해 그만큼 끌어올린다. 눕힌 뒤의 실제 높이도 같이
-   구해 스크롤 길이를 맞춘다 — 안 그러면 끝에서 허공을 스크롤하게 된다. */
 function tiltMetrics(height: number) {
   const rad = (TILT_DEG * Math.PI) / 180;
   const half = height / 2;
@@ -64,8 +53,6 @@ function tiltMetrics(height: number) {
   return { shift: half - top, visualHeight: top + bottom };
 }
 
-/* 스탬프를 좌우로 굽이치는 길 위에 놓는다. sin 곡선이라 개수가 늘어도 규칙이 유지된다.
-   x는 맵 너비에 대한 비율, y는 픽셀. */
 function nodePos(index: number, width: number) {
   return {
     x: (0.5 + Math.sin(index * 0.92) * 0.26) * width,
@@ -78,7 +65,7 @@ export default function Passport() {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const bottomPad = useTabBarClearance(20);
-  // 아래 버튼 줄은 탭바 바로 위에 앉힌다. 상세 화면의 여백(bottomPad)과 달리 넉넉할 이유가 없다.
+
   const actionsPad = useTabBarClearance(4);
   const [passport, setPassport] = useState<PassportDetail | null>(null);
   const [items, setItems] = useState<TimelineItem[]>([]);
@@ -87,7 +74,6 @@ export default function Passport() {
   const [error, setError] = useState<string | null>(null);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  // 날아가는 도장 + 펼쳐지는 기록
   const fly = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const flyScale = useRef(new Animated.Value(1)).current;
   const flyOn = useRef(new Animated.Value(0)).current;
@@ -107,7 +93,7 @@ export default function Passport() {
         .then(([detail, list, page]) => {
           if (!active) return;
           setPassport(detail);
-          // 백엔드 타임라인은 오래된 순으로 온다 — 길도 그 순서대로 이어진다.
+
           setItems([...list].sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)));
           setGrade(page.content.find((p) => String(p.id) === String(id))?.overallGrade ?? null);
           setError(null);
@@ -125,7 +111,6 @@ export default function Passport() {
     }, [id]),
   );
 
-  // 스탬프를 누르면 그 자리에서 도장이 날아와 기록이 깃발처럼 펼쳐진다.
   function openStamp(index: number) {
     const item = items[index];
     if (!item) return;
@@ -153,8 +138,6 @@ export default function Passport() {
       }),
     ]).start();
 
-    /* 애니메이션 콜백에만 기대면 화면이 백그라운드로 갔다 오는 등으로 콜백이 안 올 때
-       도장이 화면에 남고 기록은 투명한 채로 멈춘다. 시간으로도 반드시 마무리한다. */
     clearTimeout(landTimer.current);
     landTimer.current = setTimeout(() => {
       flyOn.setValue(0);
@@ -164,7 +147,7 @@ export default function Passport() {
         easing: Easing.bezier(0.22, 0.9, 0.3, 1),
         useNativeDriver: true,
       }).start();
-      // 애니메이션이 어떤 이유로든 끝나지 않아도 내용은 보여야 한다.
+
       setTimeout(() => unfurl.setValue(1), 900);
     }, 540);
   }
@@ -202,7 +185,6 @@ export default function Passport() {
     );
   }
 
-  /* 기록 삭제. 별도 화면으로 보내면 도장을 눌러 연 흐름이 끊긴다 — 여기서 지운다. */
   function confirmDelete(eventId: string) {
     Alert.alert("기록 삭제", "이 기록을 삭제할까요?", [
       { text: "취소" },
@@ -213,7 +195,7 @@ export default function Passport() {
           try {
             await journeyApi.remove(eventId);
             closeStamp();
-            // 이 화면은 포커스될 때만 다시 읽는다. 화면을 옮기지 않으므로 목록에서 직접 뺀다.
+
             setItems((current) =>
               current.filter(
                 (entry) => !(entry.type === "USER_EVENT" && String(entry.id) === eventId),
@@ -235,7 +217,6 @@ export default function Passport() {
     <View style={styles.screen}>
       <Header title="여권" back />
 
-      {/* 가방 정보는 고정한다. 스탬프를 따라 한참 내려가도 어느 가방의 여권인지 계속 보인다. */}
       <View style={styles.fixedTop}>
         <View style={styles.heroRow}>
           <View style={styles.hero}>
@@ -263,7 +244,6 @@ export default function Passport() {
         </Text>
       </View>
 
-      {/* 지도만 스크롤한다. 스크롤 영역이 아래 버튼 위에서 끝나므로 스탬프가 버튼에 가리지 않는다. */}
       <ScrollView style={styles.mapScroll} contentContainerStyle={styles.mapScrollContent}>
         <View style={[styles.mapWrap, { height: tilt.visualHeight, marginTop: 10 - tilt.shift }]}>
           <View style={[styles.map, { width: mapWidth, height: mapHeight }]}>
@@ -314,7 +294,6 @@ export default function Passport() {
         </View>
       </ScrollView>
 
-      {/* 버튼은 화면에 고정한다. 스크롤이 여기서 끝나 스탬프가 버튼 아래로 넘어가지 않는다. */}
       <View style={[styles.mapActions, { paddingBottom: actionsPad }]}>
         <Pressable
           onPress={() => router.push({ pathname: "/journey/transfer", params: { id } })}
@@ -330,7 +309,6 @@ export default function Passport() {
         </Pressable>
       </View>
 
-      {/* 날아가는 도장 (착지하면 사라지고 상세가 뜬다) */}
       <Animated.View
         pointerEvents="none"
         style={[
@@ -354,7 +332,6 @@ export default function Passport() {
               { paddingTop: insets.top + 16, paddingBottom: bottomPad },
             ]}
           >
-            {/* 어느 가방의 기록인지 상세에서도 그대로 보인다. */}
             <View style={styles.hero}>
               <Image source={bagImage} style={styles.heroImage} />
             </View>
@@ -503,7 +480,7 @@ const styles = StyleSheet.create({
   diamond: { color: colors.gold, fontSize: 12 },
 
   mapWrap: { alignItems: "center" },
-  // 시점 거리를 좁힐수록 아래로 갈수록 멀어 보이는 정도가 세진다. 밀리는 보정은 tiltMetrics가 한다.
+
   map: { transform: [{ perspective: PERSPECTIVE }, { rotateX: `${TILT_DEG}deg` }] },
   path: {
     position: "absolute",

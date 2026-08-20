@@ -14,8 +14,7 @@ export default function Analysis() {
     try {
       parsed = JSON.parse(photos || "[]");
     } catch {}
-    // 고정폭으로 채우면 실제 요청이 빨리 끝날 때 막대가 중간에서 100%로 튀어 어색하다.
-    // 남은 거리에 비례해 증가폭을 줄이는 감속 곡선으로, 요청이 언제 끝나든 자연스럽게 이어진다.
+
     const timer = setInterval(() => {
       setP((x) => {
         if (x >= 95) return x;
@@ -45,8 +44,7 @@ export default function Analysis() {
       .catch((reason) => {
         if (cancelled) return;
         clearInterval(timer);
-        /* 예전에는 무슨 실패든 같은 문구만 띄워서 재촬영하면 되는지, 서버가 죽은 건지
-           구분할 수 없었다. 백엔드가 주는 코드에 맞춰 다음에 뭘 해야 하는지 알려준다. */
+
         const code = reason instanceof ApiError ? reason.code : "";
         const detail =
           reason instanceof ApiError

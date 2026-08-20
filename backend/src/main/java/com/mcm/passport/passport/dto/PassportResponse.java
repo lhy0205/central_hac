@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-// receiptImageUrl은 비공개 데이터이므로 이 응답에 절대 포함하지 않는다 (스펙 10번).
 public record PassportResponse(
     Long id,
     String serialNumber,

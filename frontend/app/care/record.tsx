@@ -6,8 +6,7 @@ import { ApiError, careRecordApi } from "../../src/api/client";
 import { AppButton, Field, Header } from "../../src/components/UI";
 import { PhotoPicker, validatePhotos, type PickedPhoto } from "../../src/components/PhotoPicker";
 import { common } from "../../src/theme";
-// toISOString()은 UTC 기준이라 그 문자열을 그대로 뒀다가 new Date(text)로 다시 파싱하면
-// 로컬 시간대로 잘못 해석돼 KST 기준 9시간이 어긋난다. 로컬 필드로 직접 조합해 피한다.
+
 function localDateTimeInput(date: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;

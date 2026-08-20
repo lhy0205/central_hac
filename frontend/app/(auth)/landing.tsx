@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BrandBackdrop, BrandMark } from "../../src/components/BrandBackdrop";
 
-/* 스플래시가 끝나면 나오는 시작 화면. 배경 영상은 계속 돌고, 로고만 가운데로 내려온다. */
 export default function Landing() {
   const insets = useSafeAreaInsets();
   return (

@@ -3,9 +3,6 @@ import { StyleSheet, View, type ViewStyle } from "react-native";
 
 import { colors } from "../theme";
 
-/* 여권 스탬프. 실제 고무도장처럼 이중 원테 + 위쪽 아치 영문 + 가운데 선화 + 아래 한글.
-   타입 키는 journey/index.tsx의 typeLabel()이 만들어내는 라벨과 같은 집합이라,
-   타임라인 항목의 라벨을 그대로 넘기면 된다. */
 export type StampType =
   | "등록"
   | "진단"
@@ -62,7 +59,7 @@ export function Stamp({
 }) {
   const glyph = GLYPHS[type as StampType] ?? GLYPHS["기타"];
   const ink = locked ? colors.inkLocked : colors.ink;
-  // TextPath는 같은 문서 안에서 id가 겹치면 첫 번째 경로만 따라가므로 타입별로 나눠 둔다.
+
   const arcId = `stamp-arc-${glyph.en.replace(/\s/g, "")}-${locked ? "off" : "on"}`;
 
   return (
@@ -108,7 +105,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stampPaper,
     alignItems: "center",
     justifyContent: "center",
-    // 종이 두께처럼 보이도록 아래쪽에만 단단한 그림자를 준다.
+
     shadowColor: "#5A3E1A",
     shadowOpacity: 0.22,
     shadowRadius: 10,

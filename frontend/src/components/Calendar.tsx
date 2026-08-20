@@ -10,8 +10,6 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-/* 구매일(제품 등록)과 예약일(공식 케어 예약)이 같은 달력을 쓴다.
-   value/onSelect는 백엔드가 받는 형식 그대로 YYYY-MM-DD 문자열이다. */
 export function Calendar({
   value,
   onSelect,

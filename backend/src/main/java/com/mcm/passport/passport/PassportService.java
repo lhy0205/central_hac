@@ -40,9 +40,6 @@ public class PassportService {
     private final ReservationRepository reservationRepository;
     private final java.time.Clock clock;
 
-    // 업로드는 Cloudinary로의 외부 HTTP 호출이라 DB 커넥션을 쥔 채로 기다리면 커넥션 풀을
-    // 불필요하게 오래 점유한다. 이 메서드만 클래스 레벨 @Transactional을 걷어내서 업로드가
-    // 끝난 뒤에야 DB 트랜잭션이 시작되게 한다(리포지토리 메서드는 각자 트랜잭션을 가지니 원자성은 유지).
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public PassportResponse register(Long ownerAccountId, RegisterPassportRequest request,
                                       MultipartFile receiptImage, List<MultipartFile> baselineImages) {
@@ -50,8 +47,7 @@ public class PassportService {
         if (!SerialValidator.isValid(request.serialNumber())) {
             throw new ApiException(ErrorCode.INVALID_SERIAL_FORMAT);
         }
-        // 대소문자만 다른 시리얼로 같은 가방이 두 번 등록되지 않도록 대문자로 정규화한 뒤 이 값만
-        // 쓴다. Locale.ROOT를 명시하는 건 터키어 로케일에서 'i'가 'İ'로 바뀌는 걸 막기 위함이다.
+
         String serialNumber = request.serialNumber().toUpperCase(Locale.ROOT);
         int purchaseYear = request.purchaseDate().getYear();
         if (passportRepository.existsBySerialNumberAndPurchaseYearAndStatus(
@@ -71,29 +67,22 @@ public class PassportService {
             receiptImageUrl, receiptImageUrl != null, baselineImageUrls, request.usageFrequency());
 
         try {
-            // 업로드가 오래 걸리는 동안 계정이 탈퇴했을 수 있어 저장 직전에 다시 확인한다 — 시작할
-            // 때 한 번만 확인하면 그 사이 탈퇴한 계정도 등록에 성공해버린다. try 안에 둬야 이 재확인이
-            // 던지는 예외도 아래 catch의 고아 이미지 정리를 탄다.
+
             accountService.getActiveAccountOrThrow(ownerAccountId);
             return PassportResponse.from(passportRepository.save(passport));
         } catch (DataIntegrityViolationException e) {
-            // 사전 존재여부 체크와 실제 저장 사이의 경합을 대비한 DB 레벨 안전망 — 이미 업로드된
-            // 이미지는 고아가 되므로 베스트에포트로 정리한다(정리 실패는 로그만 남기고 원래
-            // SERIAL_ALREADY_REGISTERED 예외를 가리지 않는다).
+
             cleanupUploadedImages(receiptImageUrl, baselineImageUrls);
             throw new ApiException(ErrorCode.SERIAL_ALREADY_REGISTERED);
         } catch (RuntimeException e) {
-            // DiagnosisService.submit()/CareRecordService.create()와 같은 이유로, 위
-            // DataIntegrityViolationException 외의 RuntimeException(재확인이 던지는 ApiException
-            // 포함)에도 똑같이 고아 이미지를 정리해야 한다.
+
             cleanupUploadedImages(receiptImageUrl, baselineImageUrls);
             throw e;
         }
     }
 
     private void cleanupUploadedImages(String receiptImageUrl, List<String> baselineImageUrls) {
-        // 이미지별로 개별 try/catch를 둔다 — 하나로 묶으면 앞쪽 이미지 삭제가 실패했을 때
-        // forEach가 중단되어 뒤쪽 이미지들은 시도조차 되지 않은 채 고아로 남는다.
+
         if (receiptImageUrl != null) {
             deleteQuietly(receiptImageUrl);
         }
@@ -111,8 +100,7 @@ public class PassportService {
     public Page<PassportSummaryResponse> list(
             Long ownerAccountId, Pageable pageable) {
         accountService.getActiveAccountOrThrow(ownerAccountId);
-        // id를 타이브레이커로 항상 덧붙여서, 클라이언트가 정렬을 지정하지 않아도(혹은 동일 값이 있어도)
-        // 페이지 간 행 순서가 안정적으로 유지되도록 한다.
+
         Pageable stablePageable = PageRequest.of(
             pageable.getPageNumber(), pageable.getPageSize(),
             pageable.getSort().and(Sort.by(Sort.Direction.ASC, "id")));
@@ -139,9 +127,7 @@ public class PassportService {
     }
 
     public void delete(Long passportId, Long requesterAccountId) {
-        // 잠금 없이 읽고 softDelete하면, 그 사이 승계 코드 redeem이 먼저 소유권을 옮기고 커밋해도
-        // 이 트랜잭션은 모른 채 DELETED 처리해버릴 수 있다(새 소유자 여권이 조용히 사라짐).
-        // AccountService.withdraw()와 같은 경합이라 같은 잠금 조회로 막는다.
+
         Passport passport = passportOwnershipGuard.getOwnedActivePassportForUpdate(passportId, requesterAccountId);
         passport.softDelete();
         reservationRepository.cancelAllRequestedForPassport(passportId);

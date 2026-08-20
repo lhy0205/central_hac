@@ -95,12 +95,7 @@ const SYMPTOM_CONFIG: Record<
     official: true,
   },
 };
-/* 진단 항목 라벨 -> 케어 증상 매핑.
-   백엔드에는 두 엔진이 있고 라벨 어휘가 다르다:
-     RuleBasedWearDiagnosisEngine → 마모 / 변색 / 부자재상태 / 코팅벗겨짐
-     MlWearDiagnosisEngine        → 찢어짐 / 스크래치 / 오염 / 마모 / 밑창분리 / 지퍼파손 / 변형
-   ML 어휘를 넣지 않으면 7개 중 "마모" 하나만 매칭돼, 찢어지고 오염된 가방에도
-   기본값(모서리 마모·코팅 벗겨짐) 가이드가 그대로 노출된다. */
+
 export function symptomsFromScores(scores: Record<string, number>): CareSymptom[] {
   const found = new Set<CareSymptom>();
   Object.entries(scores)
@@ -128,8 +123,6 @@ export function symptomsFromScores(scores: Record<string, number>): CareSymptom[
         normalized.includes("스크래치")
       )
         found.add("모서리 마모");
-      /* 찢어짐·밑창분리·변형은 셀프 케어로 다룰 수 있는 증상이 아니다(공식 수선 영역).
-     억지로 매핑하면 잘못된 자가 조치를 안내하게 되므로 의도적으로 제외한다. */
     });
   return [...found];
 }

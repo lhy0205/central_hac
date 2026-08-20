@@ -63,9 +63,6 @@ public class Diagnosis {
         this.evidenceText = evidenceText;
     }
 
-    // TimelineEvent/CareRecord와 같은 이유 — AuditingEntityListener가 이 엔티티 자신의
-    // @PrePersist보다 먼저 실행되도록 JPA 스펙에서 보장하므로, createdAt은 이미 Clock 기반으로
-    // 채워져 있다. diagnosedAt은 지금까지 항상 저장 시각과 동일했으므로 그 값을 그대로 재사용한다.
     @PrePersist
     void prePersist() {
         this.diagnosedAt = this.createdAt;

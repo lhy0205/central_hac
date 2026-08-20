@@ -1,8 +1,6 @@
 import type { TimelineItem } from "../api/client";
 import { gradeLabel } from "../theme";
 
-/* 타임라인 항목의 라벨/제목. journey/index.tsx에 있던 것을 여권 3D 맵과 스탬프 상세도
-   같이 쓰도록 옮겼다 — 두 화면이 다른 문구를 보여주면 같은 기록이 달라 보인다. */
 export const EVENT_TYPE_LABEL: Record<string, string> = {
   MOMENT: "순간 기록",
   STORE_VISIT: "매장 방문",
@@ -31,8 +29,7 @@ export function titleFor(item: TimelineItem) {
       ? `예약 취소 · ${item.detail.storeName}`
       : `매장 케어 예약 · ${item.detail.storeName}`;
   if (item.type === "TRANSFER") return "여권 승계 완료";
-  /* 기록 추가 화면은 제목과 메모를 "제목\n메모" 한 덩어리로 보낸다 — 서버 note 필드가
-     하나뿐이라서다. 첫 줄만 제목으로 쓴다. 통째로 쓰면 아래 본문과 같은 글이 두 번 나온다. */
+
   return (
     String(item.detail.note ?? "")
       .split("\n")[0]
@@ -42,14 +39,10 @@ export function titleFor(item: TimelineItem) {
   );
 }
 
-/* 스탬프 상세의 노트 본문.
-   기록 종류마다 본문이 될 만한 필드가 다르고, 진단처럼 메모 자체가 없는 것도 있다.
-   빈 문자열을 그대로 돌려주면 상세가 빈 상자로 보이므로 항상 읽을 거리를 만들어 준다. */
 export function noteFor(item: TimelineItem) {
   const detail = item.detail as Record<string, unknown>;
 
   if (item.type === "USER_EVENT") {
-    // 첫 줄은 제목으로 이미 위에 나갔으니 본문은 그다음 줄부터다.
     const body = String(detail.note ?? "")
       .split("\n")
       .slice(1)

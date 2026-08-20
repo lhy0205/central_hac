@@ -68,8 +68,6 @@ public class Account {
         this.passwordHash = newPasswordHash;
     }
 
-    // journeyAlertsEnabled/marketingAlertsEnabled는 저장만 되고 아직 알림 생성 로직에서 안 쓰인다 —
-    // 대응하는 알림 타입 자체가 없다. 실제로 게이팅하는 건 careAlertsEnabled뿐.
     public void updateNotificationPreferences(
             boolean careAlertsEnabled, boolean journeyAlertsEnabled, boolean marketingAlertsEnabled) {
         this.careAlertsEnabled = careAlertsEnabled;

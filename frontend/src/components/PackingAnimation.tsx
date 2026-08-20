@@ -4,9 +4,6 @@ import { Text } from "./BrandText";
 
 const bagImage = require("../../assets/mcm-bag.png");
 
-/* 등록 완료 화면의 패킹 모션. 가방이 위에서 상자로 떨어지고 뚜껑이 닫히면서
-   "My MCM" 라벨이 뜬다 — 디자인 파일(MCM Splash Loading.dc.html)의 6a 아트보드를
-   React Native로 옮긴 것이라 타이밍(6초 루프)도 그대로다. */
 export function PackingAnimation() {
   const t = useRef(new Animated.Value(0)).current;
 
@@ -23,7 +20,6 @@ export function PackingAnimation() {
     return () => loop.stop();
   }, [t]);
 
-  // 원본 keyframes: 0% 위에서 시작 → 42% 바닥 근처 → 50% 안착
   const bagY = t.interpolate({
     inputRange: [0, 0.32, 0.42, 0.5, 1],
     outputRange: [-215, -34, 10, 22, 22],
@@ -33,7 +29,7 @@ export function PackingAnimation() {
     inputRange: [0, 0.32, 0.42, 0.5, 1],
     outputRange: [1, 0.92, 0.86, 0.84, 0.84],
   });
-  // 뚜껑 두 짝이 시차를 두고 닫힌다.
+
   const flapFar = t.interpolate({
     inputRange: [0, 0.4, 0.62, 1],
     outputRange: ["-104deg", "-104deg", "0deg", "0deg"],

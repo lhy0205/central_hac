@@ -41,7 +41,7 @@ function DiagnosisHeader({ onBack }: { onBack: () => void }) {
 
 export default function Diagnosis() {
   const bottomPad = useTabBarClearance(24);
-  // 안내 시트는 화면 바닥에 붙으므로, CTA가 탭바 아이콘에 닿지 않게 더 띄운다.
+
   const sheetPad = useTabBarClearance(44);
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [passport, setPassport] = useState<PassportSummary | null>(null);
@@ -170,7 +170,6 @@ export default function Diagnosis() {
                 </Pressable>
               </View>
             ) : (
-              /* 가방을 좌우로 넘겨 고른다 — 목록보다 사진을 크게 보여줘야 어떤 가방인지 바로 안다. */
               <FlatList
                 data={passports}
                 keyExtractor={(item) => String(item.id)}
@@ -307,7 +306,6 @@ export default function Diagnosis() {
         </Pressable>
       </ScrollView>
 
-      {/* 처음 들어오면 이 기능이 뭘 하는지 한 번 알려준다. */}
       {showIntro ? (
         <View style={styles.introLayer}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowIntro(false)} />
@@ -339,7 +337,6 @@ const PICK_WIDTH = Dimensions.get("window").width - 40;
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#FFFFFF" },
 
-  // 가방 고르기 카드
   pickWrap: { width: PICK_WIDTH },
   pickCard: {
     borderWidth: 1,
@@ -372,7 +369,6 @@ const styles = StyleSheet.create({
   pickPressed: { transform: [{ scale: 0.96 }] },
   pickButtonText: { fontSize: 13, color: "#7A7A7A" },
 
-  // 기능 안내
   introLayer: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(40,40,40,0.5)" },
   introSheet: {
     position: "absolute",
@@ -424,7 +420,7 @@ const styles = StyleSheet.create({
   back: { color: "#333333", fontSize: 31, fontWeight: "300", lineHeight: 34 },
   headerTitle: { color: "#303030", fontSize: 18, fontWeight: "500" },
   headerSpacer: { width: 16 },
-  // 떠 있는 탭바가 "다음 단계" 버튼을 가리지 않도록 아래를 비워 둔다.
+
   content: { paddingHorizontal: 16, paddingTop: 18 },
   selectionLoading: { flex: 1, alignItems: "center", justifyContent: "center" },
   selectionLoadingText: { fontSize: 11, color: "#999", marginTop: 10 },

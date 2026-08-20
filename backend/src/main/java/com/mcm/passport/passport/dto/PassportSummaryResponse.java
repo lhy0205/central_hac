@@ -11,8 +11,8 @@ public record PassportSummaryResponse(
     String modelName,
     String nickname,
     long ownershipDays,
-    String overallGrade,        // 진단 이력이 없으면 null
-    LocalDateTime lastDiagnosedAt // 진단 이력이 없으면 null
+    String overallGrade,
+    LocalDateTime lastDiagnosedAt
 ) {
     public static PassportSummaryResponse withDiagnosis(
             Passport passport, com.mcm.passport.diagnosis.Diagnosis latestDiagnosis, Clock clock) {

@@ -68,17 +68,12 @@ public class GlobalExceptionHandler {
             .body(new ErrorResponse(ErrorCode.VALIDATION_ERROR.name(), "업로드 파일 크기가 허용 범위를 초과했습니다."));
     }
 
-    // 없는 경로 요청. 명시적으로 잡지 않으면 아래 catch-all에 걸려 500 + ERROR 스택트레이스가 남는다.
-    // 오타 난 URL 하나가 서버 장애처럼 보이고, 진짜 500이 로그에 묻힌다.
     @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
     public ResponseEntity<ErrorResponse> handleNotFound(Exception e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
             .body(new ErrorResponse("NOT_FOUND", "요청한 경로를 찾을 수 없습니다."));
     }
 
-    // 최후의 안전망: 위에서 명시적으로 잡지 않는 모든 예외(DataIntegrityViolationException 등)가
-    // Spring 기본 에러 바디로 새어나가지 않도록 {code, message} 계약을 지킨다.
-    // Spring은 선언 순서와 무관하게 가장 구체적인 핸들러를 우선 매칭하므로 마지막에 두어도 안전하다.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception e) {
         log.error("처리되지 않은 예외가 발생했습니다.", e);

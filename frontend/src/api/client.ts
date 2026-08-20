@@ -25,7 +25,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
   if (token === "mcm-care-demo")
     throw new ApiError("DEMO_MODE", "체험 모드에서는 서버 데이터를 사용하지 않습니다.", 0);
   const controller = new AbortController();
-  // 사진이 붙는 멀티파트 요청(등록·진단·케어기록·타임라인)은 Cloudinary 업로드까지 거쳐 8초를 쉽게 넘긴다.
+
   const timeoutMs = options.body instanceof FormData ? 60000 : 8000;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   let response: Response;
@@ -66,9 +66,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
-// RN의 FormData는 문자열 파트에 Content-Type을 지정할 수 없어 항상 text/plain으로 나간다.
-// Blob/data-URI로 감싸는 우회는 RN 0.81 네이티브 네트워킹에서 본문이 깨져 400이 났다.
-// 대신 백엔드(WebMvcConfig)가 text/plain 파트도 JSON으로 파싱하도록 맞춰져 있다.
+
 function jsonPart(value: object) {
   return JSON.stringify(value) as unknown as Blob;
 }
@@ -146,7 +144,7 @@ function demoSummary(item: PassportDetail): PassportSummary {
     lastDiagnosedAt: null,
   };
 }
-// 백엔드 PassportController 기준. serial+model+purchaseDate(YYYY-MM-DD)+usageFrequency(DAILY/FEW_TIMES_A_WEEK/OCCASIONAL/RARE)는 필수, 영수증/베이스라인 사진은 선택.
+
 export const productApi = {
   list: async (page = 0, size = 20, sort?: string) => {
     if (await isDemo()) {
@@ -250,13 +248,12 @@ export interface DiagnosisDetail {
   itemScores: Record<string, number>;
   overallGrade: string;
   evidenceText: string;
-  /* VLM 리포트(/diagnose)가 내는 필드. 현재 백엔드의 진단 응답에는 없으므로 optional이다 —
-     필수로 두면 타입은 통과하지만 런타임에 항상 undefined라 사용처에서 터진다. */
+
   problemAreas?: { location: string; type: string; detail: string }[];
   diagnosedAt: string;
   previousItemScores: Record<string, number> | null;
 }
-// 백엔드 DiagnosisController 기준. 파일 파트명은 images(복수), diagnosisType(SELF/STORE)은 필수 폼 필드.
+
 export const diagnosisApi = {
   list: (productId: string, page = 0, size = 20, sort?: string) =>
     api<{ content: DiagnosisDetail[]; totalElements: number }>(
@@ -297,8 +294,7 @@ export interface TimelineEventDetail {
   imageUrl: string | null;
   eventDate: string;
 }
-// 백엔드 TimelineController 기준. 이벤트 생성은 request(JSON)+image(선택) 멀티파트. eventType은 MOMENT/STORE_VISIT/SELF_CARE/OTHER.
-// 수정은 note만 바꿀 수 있음(eventType/eventDate/image는 백엔드 PATCH가 지원하지 않음).
+
 export const journeyApi = {
   list: (productId: string) => api<TimelineItem[]>(`/api/passports/${productId}/timeline`),
   detail: (eventId: string) => api<TimelineEventDetail>(`/api/timeline/events/${eventId}`),
@@ -337,9 +333,7 @@ export interface NotificationPreferences {
   journeyAlertsEnabled: boolean;
   marketingAlertsEnabled: boolean;
 }
-// 백엔드 AccountController 기준. 이메일은 수정 불가(UpdateProfileRequest엔 nickname만 있음) — 회원정보 변경 화면에서 이메일 필드는 읽기 전용으로 표시해야 함.
-// 알림 설정 중 careAlertsEnabled만 실제로 알림 생성을 막는다(NotificationService 게이팅) — journeyAlertsEnabled/marketingAlertsEnabled는
-// 저장은 되지만 대응하는 알림 종류가 백엔드에 없어서 아직 아무 동작도 막지 않는다.
+
 export const accountApi = {
   me: () => api<AccountInfo>("/api/account/me"),
   updateMe: (body: { nickname: string }) =>
@@ -360,7 +354,7 @@ export interface TransferPreview {
   ownershipDays: number;
   overallGrade: string;
 }
-// 백엔드 TransferController 기준. issueCode는 원 소유자가 자기 여권에 대해 발급하는 것 — 현재 UI에 그 화면은 없어 여기 정의만 해둠.
+
 export const transferApi = {
   issueCode: (passportId: string) =>
     api<{ code: string; expiresAt: string }>(`/api/passports/${passportId}/transfer-code`, {
@@ -431,7 +425,7 @@ export interface StoreSummary {
   businessHoursEnd: string;
   slotLengthMinutes: number;
 }
-// 백엔드 StoreController 기준.
+
 export const storeApi = {
   list: (page = 0, size = 20) =>
     api<{ content: StoreSummary[]; totalElements: number }>(
@@ -451,7 +445,7 @@ export interface ReservationDetail {
   status: "REQUESTED" | "CANCELLED";
   createdAt: string;
 }
-// 백엔드 ReservationController 기준. slotDateTime은 반드시 미래 시각(로컬 타임존 없는 ISO-8601, 예: 2026-08-20T14:00:00).
+
 export const reservationApi = {
   availableSlots: (storeId: string, date: string) =>
     api<string[]>(`/api/stores/${storeId}/available-slots?date=${date}`),

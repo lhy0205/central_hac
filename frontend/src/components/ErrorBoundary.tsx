@@ -2,10 +2,6 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "./BrandText";
 
-/* 렌더 중에 예외가 나면 React가 트리를 통째로 버린다. 릴리스 빌드에는 개발용 빨간 화면이
-   없어서 사용자 눈에는 "앱이 그냥 꺼졌다"로 보이고, 로그를 못 뽑으면 원인도 남지 않는다.
-   여기서 잡아 화면에 그대로 띄운다 — 데모 중에 앱이 죽는 것보다 낫고, 사진 한 장이면
-   무엇이 터졌는지 알 수 있다. */
 type Props = { children: ReactNode };
 type State = { error: Error | null; stack: string | null };
 
@@ -17,7 +13,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // adb를 붙일 수 있는 상황이면 logcat에서도 보이도록 남긴다.
     console.error("[ErrorBoundary]", error, info.componentStack);
     this.setState({ stack: info.componentStack ?? null });
   }

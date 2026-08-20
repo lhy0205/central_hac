@@ -20,9 +20,6 @@ import {
 import { ReasonChips } from "./ReasonChips";
 import { colors } from "../theme";
 
-/* 홈 헤더의 알림 아이콘을 누르면 벨 아래에서 말풍선으로 내려온다.
-   내용은 기존 (tabs)/notifications.tsx와 같은 값을 쓴다 — 타입 라벨은 META, 본문은
-   백엔드가 만들어 내려주는 message, 판단 근거는 reasonFactors, 날짜는 createdAt. */
 const META: Record<NotificationType, { label: string }> = {
   SELF_CARE: { label: "케어" },
   STORE_SERVICE: { label: "진단" },
@@ -90,7 +87,6 @@ export function NotificationBubble({
     if (open && items == null) void load();
   }, [items, load, open]);
 
-  // 위로 밀어 올리면 닫힌다. 목록이 스크롤 가능한 상태에서는 칩/손잡이에서 끌면 된다.
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gesture) => gesture.dy < -6,
@@ -219,7 +215,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 14 },
     elevation: 16,
   },
-  // 벨 아이콘을 가리키는 꼬리. 사각형을 45도 돌려 삼각형처럼 보이게 한다.
+
   tail: {
     position: "absolute",
     top: -6,

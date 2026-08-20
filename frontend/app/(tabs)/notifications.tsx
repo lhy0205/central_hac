@@ -20,8 +20,7 @@ import { useTabBarClearance } from "../../src/components/BottomTabBar";
 import { ReasonChips } from "../../src/components/ReasonChips";
 import { Header } from "../../src/components/UI";
 import { colors } from "../../src/theme";
-// 고정 설명문은 뺐다 — 타입이 같으면 누구에게나 같은 문장이라 "왜 지금"의 답이 못 된다.
-// 그 자리는 서버가 알림마다 내려주는 실제 판단 근거(reasonFactors)가 대신한다.
+
 const META: Record<NotificationType, { label: string }> = {
   SELF_CARE: { label: "케어" },
   STORE_SERVICE: { label: "진단" },

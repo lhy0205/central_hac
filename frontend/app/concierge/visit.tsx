@@ -24,15 +24,6 @@ function todayIso() {
   ).padStart(2, "0")}`;
 }
 
-/* 매장 방문 예약 — Concierge(구매 전)에서 "매장에서 보기"로 들어온다.
-
-   케어 예약(care/booking)과는 다른 일이다. 케어 예약은 이미 가진 제품을 맡기는 것이라
-   passportId가 필요하지만, 여기 오는 사람은 아직 그 제품을 사지 않았다. 그래서 케어 예약
-   화면으로 보내면 애초에 성립하지 않는다.
-
-   매장 목록과 예약 가능 시간은 실제 API를 그대로 쓴다(둘 다 passportId가 필요 없다).
-   다만 "방문 예약"을 저장할 엔드포인트는 백엔드에 아직 없어서 확정은 화면에서 끝난다 —
-   기획서가 Concierge를 프런트엔드 전용으로 잡아둔 범위와 같다. */
 export default function StoreVisit() {
   const bottomPad = useTabBarClearance(20);
   const { model } = useLocalSearchParams<{ model?: string }>();

@@ -19,8 +19,6 @@ export interface IdentifyResponse {
   detections: IdentifyDetection[];
 }
 
-// server/ar-identification/api_server.py의 POST /identify를 호출한다. top-1 정확도가 61.9%라
-// (HANDOFF.md 참고) 호출부는 top-1만 보지 말고 candidates와 similarity 임계값을 같이 봐야 한다.
 export const IDENTIFY_CONFIDENCE_THRESHOLD = 0.5;
 
 export async function identifyProduct(
@@ -40,8 +38,7 @@ export async function identifyProduct(
   data.append("file", photo as unknown as Blob);
 
   const controller = new AbortController();
-  // 사진 업로드는 회선 상태에 따라 수 초에서 수십 초까지 걸린다. 서버 추론은 1초 미만이라
-  // 대부분은 업로드 시간 — client.ts도 FormData 요청엔 같은 이유로 60초를 쓴다.
+
   const timeout = setTimeout(() => controller.abort(), 60000);
   let response: Response;
   try {
@@ -64,9 +61,7 @@ export async function identifyProduct(
     let parsed: { detail?: string } = {};
     try {
       parsed = JSON.parse(text);
-    } catch {
-      /* not JSON */
-    }
+    } catch {}
     throw new ApiError(
       `HTTP_${response.status}`,
       parsed.detail || "제품 인식에 실패했습니다.",

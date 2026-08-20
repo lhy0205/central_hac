@@ -31,8 +31,7 @@ public class AccountService {
     private final Clock clock;
 
     public AccountResponse signup(SignupRequest request) {
-        // 대소문자만 다른 이메일이 중복 가입되거나 로그인에 실패하지 않도록 소문자로 정규화한 뒤
-        // 이 값만 쓴다.
+
         String email = normalizeEmail(request.email());
         if (accountRepository.existsByEmailAndStatus(email, AccountStatus.ACTIVE)) {
             throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -41,8 +40,7 @@ public class AccountService {
         try {
             return AccountResponse.from(accountRepository.save(account));
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            // 사전 존재여부 체크와 실제 저장 사이의 경합 상태를 대비한 DB 레벨 안전망
-            // (PassportService.register의 동일 패턴 참고)
+
             throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
     }
@@ -56,8 +54,6 @@ public class AccountService {
         return new LoginResponse(jwtTokenProvider.generateToken(account.getId()), AccountResponse.from(account));
     }
 
-    // Locale.ROOT를 명시한다 — 로케일 기본값을 쓰면(터키어 등) 대소문자 변환 결과가 서버 로케일에
-    // 따라 달라질 수 있다(SerialValidator 정규화와 같은 이유).
     private String normalizeEmail(String email) {
         return email == null ? null : email.toLowerCase(java.util.Locale.ROOT);
     }
@@ -76,18 +72,16 @@ public class AccountService {
         String normalizedEmail = normalizeEmail(email);
         accountRepository.findByEmailAndStatus(normalizedEmail, AccountStatus.ACTIVE).ifPresent(account -> {
             String rawToken = UUID.randomUUID().toString();
-            // 원문이 아니라 해시만 저장한다. 테이블이 유출돼도 유효기간 안의 재설정 요청을
-            // 가로챌 수 없게 하기 위함이다.
+
             passwordResetTokenRepository.save(
                 new PasswordResetToken(account.getId(), hashToken(rawToken), LocalDateTime.now(clock).plusMinutes(30)));
             passwordResetMailer.sendResetLink(normalizedEmail, rawToken);
         });
-        // 존재하지 않는 이메일이거나 탈퇴한 계정이어도 에러를 던지지 않는다 (계정 존재/상태 노출 방지)
+
     }
 
     public void confirmPasswordReset(ConfirmPasswordResetRequest request) {
-        // 동시 요청으로 토큰이 두 번 쓰이지 않도록 행 잠금을 잡고 조회한다(자세한 이유는
-        // PasswordResetTokenRepository.findByTokenForUpdate 참고). DB에는 해시만 있으니 조회도 해시로.
+
         PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenForUpdate(hashToken(request.token()))
             .filter(t -> t.isUsable(LocalDateTime.now(clock)))
             .orElseThrow(() -> new ApiException(ErrorCode.RESET_TOKEN_INVALID));
@@ -96,8 +90,6 @@ public class AccountService {
         resetToken.markUsed(LocalDateTime.now(clock));
     }
 
-    // 매번 새로 뽑는 128비트 난수라 bcrypt 같은 느린 해시가 필요 없다. 같은 패키지의 테스트가
-    // 픽스처 해시를 만들 때도 이 메서드를 그대로 쓴다.
     static String hashToken(String rawToken) {
         try {
             byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
@@ -129,12 +121,10 @@ public class AccountService {
     }
 
     public void withdraw(Long accountId) {
-        // 계정 행을 잠근 채로 읽는다. 안 그러면 그 사이 승계된 여권이 캐스케이드 취소에서 빠지고
-        // 탈퇴 계정 소유로 남는다. redeem()도 같은 행을 잠그므로 서로 직렬화된다.
+
         Account account = getActiveAccountOrThrowForUpdate(accountId);
         account.withdraw(LocalDateTime.now(clock));
-        // 잠금 없이 읽고 삭제하면 그 사이 승계된 여권까지 지워진다(새 소유자의 여권이 조용히
-        // 사라짐). 잠금을 얻는 시점에도 여전히 이 계정 소유인 경우에만 삭제한다.
+
         List<Long> ownedPassportIds = passportRepository.findIdsByOwnerAccountId(accountId);
         if (!ownedPassportIds.isEmpty()) {
             List<Long> stillOwnedPassportIds = passportRepository
@@ -156,16 +146,12 @@ public class AccountService {
             .orElseThrow(() -> new ApiException(ErrorCode.ACCOUNT_NOT_FOUND));
     }
 
-    // withdraw()/TransferService.redeem()에서만 사용 — 자세한 이유는
-    // AccountRepository.findByIdForUpdate 참고.
     public Account getActiveAccountOrThrowForUpdate(Long accountId) {
         return accountRepository.findByIdForUpdate(accountId)
             .filter(Account::isActive)
             .orElseThrow(() -> new ApiException(ErrorCode.ACCOUNT_NOT_FOUND));
     }
 
-    // TransferService.redeem()의 이른 초기 확인 전용 — 엔티티를 로드하지 않는 exists 쿼리를 써야
-    // 하는 이유는 AccountRepository.existsByIdAndStatus 참고.
     public void assertAccountActive(Long accountId) {
         if (!accountRepository.existsByIdAndStatus(accountId, AccountStatus.ACTIVE)) {
             throw new ApiException(ErrorCode.ACCOUNT_NOT_FOUND);

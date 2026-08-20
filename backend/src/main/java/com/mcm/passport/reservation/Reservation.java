@@ -40,9 +40,6 @@ public class Reservation {
     @Column(name = "slot_date_time", nullable = false)
     private LocalDateTime slotDateTime;
 
-    // Diagnosis.imageUrls와 동일 패턴: CareRequestItemType 이름을 text[]로 저장한다. 엔티티
-    // 자체는 원시 문자열만 다루고, enum 변환은 DTO 계층(ReservationResponse.from,
-    // ReservationService.create)에서 한다 — 이 코드베이스의 기존 컨벤션과 동일.
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "request_items", columnDefinition = "text[]", nullable = false)
     private List<String> requestItems;
@@ -63,8 +60,6 @@ public class Reservation {
         this.status = ReservationStatus.REQUESTED;
     }
 
-    // 이미 CANCELLED여도 다시 호출하면 그대로 CANCELLED — 취소 API가 멱등하게 동작하도록
-    // 서비스 계층에서 상태를 미리 확인하지 않고 그냥 호출한다(스펙 문서 2절 참고).
     public void cancel() {
         this.status = ReservationStatus.CANCELLED;
     }

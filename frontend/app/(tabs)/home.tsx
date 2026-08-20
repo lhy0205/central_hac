@@ -29,9 +29,6 @@ const bagImage = require("../../assets/mcm-bag.png");
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get("window");
 const CARD_WIDTH = SCREEN_W - 48;
 
-/* 카드에 구매일·구입 장소를 보여줘야 하는데 목록 응답(PassportSummary)에는 그 두 필드가 없다.
-   가방 수가 많지 않아 상세를 병렬로 한 번 더 받아 합친다. 목록 응답에 필드가 생기면
-   이 추가 요청은 지워도 된다. */
 type BagCard = PassportSummary & { purchaseDate?: string; purchasePlace?: string | null };
 
 function formatDate(value?: string) {
@@ -41,7 +38,7 @@ function formatDate(value?: string) {
 
 export default function Home() {
   const insets = useSafeAreaInsets();
-  // 카드가 탭바 아이콘에 바짝 붙지 않도록 한 뼘 띄운다.
+
   const dockBottom = useTabBarClearance(30);
   const { setTabBarHidden } = useChrome();
   const [bags, setBags] = useState<BagCard[] | null>(null);
@@ -52,13 +49,11 @@ export default function Home() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [cardIndex, setCardIndex] = useState(0);
   const [feedFocused, setFeedFocused] = useState(true);
-  // Concierge에서 관심 등록한 제품. 아직 산 게 아니라 서버 여권이 없으므로 기기에서 읽는다.
+
   const [pending, setPending] = useState<PendingPassport[]>([]);
-  /* 슬라이드 높이를 Dimensions의 window로 잡으면 안 된다. edge-to-edge라 실제 뷰포트는
-     내비게이션 바까지 덮는데 window는 그걸 뺀 값이라, 한 장이 화면보다 짧아져 넘길 때
-     아래에 검은 띠가 생기고 페이징도 어긋난다. 리스트가 차지한 높이를 직접 재서 쓴다. */
+
   const [feedHeight, setFeedHeight] = useState(SCREEN_H);
-  // 광고 문구가 "내 가방" 카드 뒤에 깔리지 않도록, 카드가 실제로 차지한 높이만큼 띄운다.
+
   const [dockHeight, setDockHeight] = useState(0);
   const [bubbleOpen, setBubbleOpen] = useState(false);
   const hiddenRef = useRef(false);
@@ -73,16 +68,12 @@ export default function Home() {
     }, []),
   );
 
-  // 화면을 벗어날 때 숨김이 남아 있으면 다른 탭에서 탭바가 사라진 채로 보인다.
   useFocusEffect(
     useCallback(() => {
       return () => setTabBarHidden(false);
     }, [setTabBarHidden]),
   );
 
-  // 홈은 탭이라 다른 화면으로 가도 마운트된 채로 남는다. 그동안 배경 영상이 디코더를 계속
-  // 붙들고 있으면, AR이나 등록 스캔처럼 카메라·영상을 또 여는 화면에서 한도를 넘겨 앱이
-  // 통째로 죽는다. 포커스를 잃으면 영상을 떼고, 돌아오면 다시 붙인다.
   useFocusEffect(
     useCallback(() => {
       setFeedFocused(true);
@@ -129,9 +120,6 @@ export default function Home() {
     }, [reloadKey]),
   );
 
-  // 배경 광고를 조금이라도 내리면 아이콘바와 내 가방이 통째로 사라지고,
-  // 맨 위까지 되돌아오면 다시 나타난다.
-  // 24px을 넘겨야 사라지면 카드가 잠깐 버티다 없어져 걸리적거린다. 끌기 시작하면 바로 치운다.
   const onFeedDragStart = () => {
     if (hiddenRef.current) return;
     hiddenRef.current = true;
@@ -154,8 +142,6 @@ export default function Home() {
     if (first?.index != null) setActiveSlide(first.index);
   }).current;
 
-  /* 카드 한 장이 세 종류다 — 실제 여권, 아직 안 산 예비 여권, 맨 끝의 제품 등록.
-     구별을 위해 종류를 붙여 한 배열로 만든다. */
   type DockCard =
     { kind: "bag"; bag: BagCard } | { kind: "pending"; item: PendingPassport } | { kind: "add" };
   const cards: DockCard[] = [
@@ -177,8 +163,7 @@ export default function Home() {
         onLayout={(event) => setFeedHeight(event.nativeEvent.layout.height)}
         onViewableItemsChanged={onViewable}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
-        /* 높이가 모든 장에서 같으니 미리 알려준다 — FlatList가 위치를 재지 않아 페이징이
-           어긋나지 않고, 다음 장을 늦게 그려 검은 띠가 뜨는 일도 없다. */
+
         getItemLayout={(_, index) => ({
           length: feedHeight,
           offset: feedHeight * index,
@@ -189,12 +174,9 @@ export default function Home() {
         windowSize={3}
         renderItem={({ item, index }) => (
           <View style={[styles.slide, { height: feedHeight }]}>
-            {/* 안드로이드가 동시에 열 수 있는 하드웨어 비디오 디코더는 2~4개뿐이다. 슬라이드
-                4개의 Video를 한꺼번에 붙여 두면 MediaCodec이 바닥나 네이티브에서 앱이 그대로
-                죽는다(paused여도 디코더는 잡고 있다). 지금 슬라이드와 바로 이웃만 붙인다. */}
+            {}
             {feedFocused && Math.abs(index - activeSlide) <= 1 ? (
               <Video
-                // v6는 번들 에셋도 source.uri로 받는다.
                 source={{ uri: item.source }}
                 style={StyleSheet.absoluteFillObject}
                 resizeMode="cover"
@@ -209,8 +191,6 @@ export default function Home() {
               style={[
                 styles.adTag,
                 {
-                  /* 카드가 사라지면 화면 아래가 통째로 비는데, 문구를 바닥에 붙여 두면
-                     고개를 숙여야 읽힌다. 아래에서 4분의 1쯤 되는 자리로 올려 눈높이에 맞춘다. */
                   bottom: chromeHidden
                     ? Math.round(feedHeight * 0.26)
                     : dockBottom + dockHeight + 14,
@@ -226,7 +206,6 @@ export default function Home() {
         )}
       />
 
-      {/* 헤더와 검색은 영상 위에 떠 있다 — 영상이 화면 맨 위까지 올라온다. */}
       <View style={[styles.top, { paddingTop: insets.top }]} pointerEvents="box-none">
         <View style={styles.header}>
           <Text style={styles.logo}>
@@ -242,10 +221,7 @@ export default function Home() {
             <View style={styles.bellClapper} />
           </Pressable>
         </View>
-        {/* 검색바는 여태 value도 onChangeText도 없는 껍데기였다. 누르면 Concierge로 보낸다 —
-            거기서 검색어가 비면 컬렉션 이야기를, 입력하면 제품 결과를 보여준다. 여기서 바로
-            타이핑을 받지 않는 이유는, 홈 배경이 세로 페이징이라 키보드가 올라오면 레이아웃이
-            흔들리기 때문이다. */}
+        {}
         <View style={styles.searchWrap}>
           <Pressable
             accessibilityLabel="제품 검색"
@@ -264,7 +240,6 @@ export default function Home() {
         </View>
       </View>
 
-      {/* 탭바가 실제로 차지하는 높이(내비게이션 바 포함)만큼 띄워야 카드가 안 가린다. */}
       {!chromeHidden && (
         <View style={[styles.dock, { bottom: dockBottom }]} pointerEvents="box-none">
           <View
@@ -341,7 +316,6 @@ function BagCardView({ bag }: { bag: BagCard }) {
   const color = gradeColor(bag.overallGrade);
   return (
     <View style={styles.cardWrap}>
-      {/* 테두리 색이 곧 AI 진단 등급이다. */}
       <View style={[styles.card, { borderColor: color }]}>
         <View style={styles.thumb}>
           <Image source={bagImage} style={styles.thumbImage} />
@@ -394,8 +368,6 @@ function BagCardView({ bag }: { bag: BagCard }) {
   );
 }
 
-/* 예비 여권 — Concierge에서 관심만 등록한 제품. 아직 실물이 없어 등급도 보유일수도 없다.
-   점선 테두리로 "아직 여권이 아니다"를 드러내고, 시리얼을 스캔하면 진짜 여권이 된다. */
 function PendingCardView({ item }: { item: PendingPassport }) {
   return (
     <View style={styles.cardWrap}>
@@ -538,7 +510,7 @@ const styles = StyleSheet.create({
   },
   searchPlaceholder: { flex: 1, fontSize: 15, color: "#8B8B8B" },
   searchPressed: { backgroundColor: "rgba(255,255,255,0.78)" },
-  // 마이크: 캡슐 머리 + 아래를 감싸는 반원. 캡슐만 두면 숫자 0처럼 보인다.
+
   mic: { width: 14, height: 18, alignItems: "center", justifyContent: "flex-start" },
   micHead: { width: 7, height: 10, borderRadius: 3.5, backgroundColor: "#6E6E6E" },
   micArc: {

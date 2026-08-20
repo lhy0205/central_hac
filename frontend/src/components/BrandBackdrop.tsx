@@ -6,8 +6,6 @@ import { colors } from "../theme";
 
 const SPLASH_VIDEO = require("../../assets/ar/videos/bag-editorial.mp4");
 
-/* 스플래시 → 시작 화면 → 로그인/회원가입이 같은 배경을 쓴다.
-   영상은 화면 전체를 채우고 그 위에 어두운 그라데이션을 깔아 글자가 읽히게 한다. */
 export function BrandBackdrop({ dim = false }: { dim?: boolean }) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -23,7 +21,6 @@ export function BrandBackdrop({ dim = false }: { dim?: boolean }) {
   );
 }
 
-// MCM | LXXVI + WORLDWIDE 워드마크.
 export function BrandMark({ style }: { style?: ViewStyle }) {
   return (
     <View style={[styles.mark, style]}>

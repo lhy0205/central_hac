@@ -6,10 +6,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useChrome } from "../context/ChromeContext";
 import { ArIcon, DiagnosisIcon, HomeIcon, JourneyIcon, ProfileIcon } from "./TabIcons";
 
-// 탭바는 두 곳에서 쓰인다.
-//  - (tabs)/_layout.tsx  : 진짜 탭 네비게이터의 tabBar
-//  - 스택으로 push된 화면 : 탭 네비게이터 밖이라 자동으로 안 뜨므로 BottomTabBar로 직접 그린다
-// 두 경로가 절대 어긋나지 않도록 그리는 일은 TabBarView 하나만 한다.
 export type TabKey = "home" | "ar" | "diagnosis" | "journey" | "profile";
 
 export const TABS: { key: TabKey; label: string; path: string; Icon: typeof HomeIcon }[] = [
@@ -21,15 +17,13 @@ export const TABS: { key: TabKey; label: string; path: string; Icon: typeof Home
 ];
 
 const BAR_HEIGHT = 70;
-// 가운데 진단 버튼은 알약 위로 이만큼 솟아 있다(styles.centerItem.marginTop).
+
 const CENTER_RISE = 26;
-// 알약이 화면 바닥에서 띄워지는 최소 높이.
+
 const BAR_LIFT = 10;
-// 내비게이션 바가 있는 기기에서 알약이 그 위에 딱 붙어 답답해 보인다. 그만큼 더 띄운다.
+
 const BAR_GAP = 10;
 
-// 떠 있는 알약 모양이라 화면 콘텐츠가 이만큼은 아래를 비워둬야 가리지 않는다.
-// 내비게이션 바(insets.bottom)를 못 세면 기기마다 딱 그만큼씩 가려지므로 훅으로 계산한다.
 export function useTabBarClearance(extra = 0) {
   const insets = useSafeAreaInsets();
   return Math.max(insets.bottom, BAR_LIFT) + BAR_GAP + BAR_HEIGHT + CENTER_RISE + extra;
@@ -46,7 +40,6 @@ export function TabBarView({
   const { tabBarHidden } = useChrome();
   const shift = useRef(new Animated.Value(0)).current;
 
-  // 홈에서 배경을 스크롤하면 통째로 아래로 밀어 없앤다. 다시 맨 위로 오면 돌아온다.
   useEffect(() => {
     Animated.timing(shift, {
       toValue: tabBarHidden ? 1 : 0,
@@ -119,7 +112,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-around",
     paddingHorizontal: 10,
-    // 알약이 배경 영상 위에 떠 보이도록 그림자를 준다.
+
     shadowColor: "#000",
     shadowOpacity: 0.16,
     shadowRadius: 22,

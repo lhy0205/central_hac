@@ -24,7 +24,6 @@ import { Calendar } from "../../src/components/Calendar";
 import { Header } from "../../src/components/UI";
 import { colors } from "../../src/theme";
 
-// 백엔드 CareRequestItemType(LEATHER_CLEANING/METAL_POLISHING/STITCHING_REPAIR/OTHER)에 맞춘 화면 표시 라벨.
 const REQUEST_OPTIONS: { label: string; value: CareRequestItemType }[] = [
   { label: "모서리 마모 보수", value: "STITCHING_REPAIR" },
   { label: "금속 부자재 광택", value: "METAL_POLISHING" },
@@ -136,7 +135,7 @@ export default function CareBooking() {
         "예약 실패",
         error instanceof ApiError ? error.message : "예약 신청에 실패했습니다.",
       );
-      // 다른 사용자가 그 사이 같은 슬롯을 먼저 예약했을 수 있음(백엔드 409) — 목록을 새로 받아온다.
+
       if (error instanceof ApiError && error.status === 409) refreshSlots();
     } finally {
       setSubmitting(false);
@@ -157,7 +156,6 @@ export default function CareBooking() {
         <View style={styles.rule} />
 
         <Text style={styles.section}>1. 매장 선택</Text>
-        {/* 지도 SDK가 아직 없고 매장 응답에 좌표 필드도 없다 — 자리만 잡아두고 목록으로 고른다. */}
         <View style={styles.map}>
           <Text style={styles.mapText}>지도</Text>
         </View>

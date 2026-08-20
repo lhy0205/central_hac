@@ -53,8 +53,6 @@ public class TimelineEvent {
         if (note != null) this.note = note;
     }
 
-    // AuditingEntityListener가 엔티티 자신의 @PrePersist보다 먼저 실행되도록 보장되므로 이 시점엔
-    // createdAt이 이미 Clock 기반으로 채워져 있다 — 그 값을 그대로 재사용해 eventDate 기본값을 정한다.
     @PrePersist
     void prePersist() {
         if (this.eventDate == null) {

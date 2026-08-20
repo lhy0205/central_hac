@@ -33,8 +33,6 @@ public class RuleBasedWearDiagnosisEngine implements WearDiagnosisEngine {
         return new DiagnosisResult(scores, grade, evidence);
     }
 
-    // 40(셀프케어 알림)과 70(매장서비스 알림)은 NotificationService가 쓰는 경계라 그대로 두고,
-    // 예전에 GOOD 하나였던 0~39 구간만 S/A/B로 더 잘게 나눈다.
     private OverallGrade toGrade(int wearScore) {
         if (wearScore >= 70) return OverallGrade.D;
         if (wearScore >= 40) return OverallGrade.C;

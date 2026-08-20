@@ -89,8 +89,6 @@ export default function Journey() {
       </>
     );
 
-  // items는 occurredAt 내림차순 정렬돼 있으므로 첫 DIAGNOSIS 항목이 최신 진단이다.
-  // PassportDetail(단건 조회) 응답에는 overallGrade가 없어(목록 조회 PassportSummaryResponse만 있음) 타임라인에서 끌어온다.
   const latestDiagnosis = items.find((item) => item.type === "DIAGNOSIS");
   const currentGrade = latestDiagnosis
     ? gradeLabel(String(latestDiagnosis.detail.overallGrade))
@@ -235,8 +233,6 @@ export default function Journey() {
   );
 }
 
-// value는 시각 없는 날짜(LocalDate, "YYYY-MM-DD")다. new Date(value)로 바로 파싱하면 UTC
-// 자정으로 해석돼 KST 등에서 하루 적게 계산될 수 있다 — 로컬 자정 기준으로 직접 구성한다.
 function daysSince(value: string) {
   const [y, m, d] = value.slice(0, 10).split("-").map(Number);
   return Math.max(0, Math.floor((Date.now() - new Date(y, m - 1, d).getTime()) / 86400000));

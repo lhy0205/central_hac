@@ -57,7 +57,6 @@ export default function SelfCareGuide() {
     );
   }
 
-  // 케어를 마치면 기록 화면으로 넘어가고, 저장되면 여권에 스탬프가 찍힌다.
   function complete() {
     if (!id) return Alert.alert("제품 선택 필요", "케어 기록을 남기려면 먼저 제품을 선택해주세요.");
     router.push({

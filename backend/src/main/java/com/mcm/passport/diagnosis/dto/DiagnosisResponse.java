@@ -16,7 +16,7 @@ public record DiagnosisResponse(
     OverallGrade overallGrade,
     String evidenceText,
     LocalDateTime diagnosedAt,
-    Map<String, Integer> previousItemScores // 비교용, 첫 진단이면 null
+    Map<String, Integer> previousItemScores
 ) {
     public static DiagnosisResponse from(Diagnosis diagnosis, Diagnosis previous) {
         return new DiagnosisResponse(

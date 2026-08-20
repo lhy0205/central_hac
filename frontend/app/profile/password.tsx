@@ -19,8 +19,6 @@ export default function Password() {
       setNext("");
       setConfirm("");
     } catch (error) {
-      /* 에러 코드는 ApiError.code에 있고 문자열 표현(name: message)에는 나타나지 않아,
-         String(error).includes(...)는 항상 false였다. */
       Alert.alert(
         "변경 실패",
         error instanceof ApiError && error.code === "INVALID_CURRENT_PASSWORD"

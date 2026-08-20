@@ -60,7 +60,7 @@ export default function Bags() {
     useCallback(() => {
       let active = true;
       setLoading(true);
-      /* 실패를 빈 배열로 삼키면 빈 상태 UI가 떠서 통신 오류를 "제품 없음"으로 단정해 보여준다. */ productApi
+      productApi
         .list()
         .then((res) => {
           if (active) {
