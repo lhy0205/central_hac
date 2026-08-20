@@ -15,3 +15,7 @@ AI/defect-detection/best.pt
 AI/ar-identification/detection/weights/bag_detect.pt
 AI/ar-identification/identification/checkpoints/best.pt
 AI/ar-identification/data/gallery/gallery_embeddings.npz
+
+# 빌드 산출물. 100MB를 넘어 저장소에 못 올리고, 올려도 clone이 무거워진다.
+# 배포는 EAS 빌드 페이지와 GitHub Release로 한다.
+*.apk

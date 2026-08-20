@@ -18,7 +18,12 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.mcm.care",
       "infoPlist": {
-        "NSCameraUsageDescription": "가방을 비추면 히스토리를 보여드리기 위해 카메라를 사용합니다."
+        "NSCameraUsageDescription": "가방을 비추면 히스토리를 보여드리기 위해 카메라를 사용합니다.",
+        "NSPhotoLibraryUsageDescription": "진단과 케어 기록에 사용할 사진을 선택합니다.",
+        "NSPhotoLibraryAddUsageDescription": "촬영한 진단 사진을 사진첩에 저장합니다.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
