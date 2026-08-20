@@ -56,6 +56,8 @@ export default function Passport() {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const bottomPad = useTabBarClearance(20);
+  // 아래 버튼 줄은 탭바 바로 위에 앉힌다. 상세 화면의 여백(bottomPad)과 달리 넉넉할 이유가 없다.
+  const actionsPad = useTabBarClearance(8);
   const [passport, setPassport] = useState<PassportDetail | null>(null);
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [grade, setGrade] = useState<string | null>(null);
@@ -284,7 +286,7 @@ export default function Passport() {
       </ScrollView>
 
       {/* 버튼은 화면에 고정한다. 스크롤이 여기서 끝나 스탬프가 버튼 아래로 넘어가지 않는다. */}
-      <View style={[styles.mapActions, { paddingBottom: bottomPad }]}>
+      <View style={[styles.mapActions, { paddingBottom: actionsPad }]}>
         <Pressable
           onPress={() => router.push({ pathname: "/journey/transfer", params: { id } })}
           style={({ pressed }) => [styles.outline, pressed && styles.pressed]}
@@ -431,7 +433,7 @@ const styles = StyleSheet.create({
   content: { padding: 20 },
   fixedTop: { paddingHorizontal: 20, paddingTop: 20 },
   mapScroll: { flex: 1 },
-  mapScrollContent: { paddingHorizontal: 20, paddingBottom: 20 },
+  mapScrollContent: { paddingHorizontal: 20 },
   mapActions: {
     flexDirection: "row",
     gap: 10,
@@ -469,7 +471,9 @@ const styles = StyleSheet.create({
 
   mapWrap: { alignItems: "center", marginTop: 10 },
   map: {
-    transform: [{ perspective: 2200 }, { rotateX: "8deg" }],
+    /* 위 모서리를 축으로 눕힌다. 가운데를 축으로 두면 스탬프가 많을 때 상단이 통째로 수축한다.
+       시점 거리를 좁힐수록 아래로 갈수록 멀어 보이는 정도가 세진다. */
+    transform: [{ perspective: 1500 }, { rotateX: "13deg" }],
     transformOrigin: "50% 0%",
   },
   path: {
