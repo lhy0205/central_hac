@@ -16,8 +16,12 @@ import org.springframework.web.client.RestClientException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class MlWearDiagnosisEngine implements WearDiagnosisEngine {
@@ -41,6 +45,10 @@ public class MlWearDiagnosisEngine implements WearDiagnosisEngine {
     private static final double MIN_CONFIDENCE = 0.35;
 
     private static final int MAX_EVIDENCE_LENGTH = 900;
+
+    private static final String EVIDENCE_PREFIX = "ML 하자 탐지: ";
+    private static final String EVIDENCE_NONE = "ML 하자 탐지 결과 특이사항 없음";
+    private static final Pattern COUNT_PATTERN = Pattern.compile("([^,:\\s]+)\\s+(\\d+)건");
 
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
@@ -82,7 +90,9 @@ public class MlWearDiagnosisEngine implements WearDiagnosisEngine {
             scores.put(label, 0);
         }
 
-        List<String> summaries = new ArrayList<>();
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        Map<String, String> worstSeverity = new LinkedHashMap<>();
+
         for (String imageUrl : images) {
             PredictResponse response = predict(imageUrl);
             List<Defect> defects = response == null || response.defects() == null ? List.of() : response.defects();
@@ -96,18 +106,76 @@ public class MlWearDiagnosisEngine implements WearDiagnosisEngine {
                 String label = type == null ? "기타" : TYPE_LABELS.getOrDefault(type, type);
                 String severity = defect.severity();
                 int score = severity == null ? 50 : SEVERITY_SCORE.getOrDefault(severity, 50);
+
+                counts.merge(label, 1, Integer::sum);
+                if (score >= scores.getOrDefault(label, -1)) {
+                    worstSeverity.put(label, defect.severityLabel());
+                }
                 scores.merge(label, score, Math::max);
-                summaries.add("%s(%s)".formatted(label, defect.severityLabel()));
             }
         }
 
         int maxScore = scores.values().stream().mapToInt(Integer::intValue).max().orElse(0);
         OverallGrade grade = toGrade(maxScore);
-        String evidence = summaries.isEmpty()
-            ? "ML 하자 탐지 결과 특이사항 없음"
-            : truncate("ML 하자 탐지: " + String.join(", ", summaries));
 
-        return new DiagnosisResult(scores, grade, evidence);
+        return new DiagnosisResult(
+            scores, grade, truncate(buildEvidence(counts, worstSeverity, grade, previousDiagnosis)));
+    }
+
+    private String buildEvidence(Map<String, Integer> counts, Map<String, String> severityLabels,
+                                  OverallGrade grade, Diagnosis previous) {
+        if (counts.isEmpty()) {
+            return EVIDENCE_NONE;
+        }
+
+        List<String> parts = new ArrayList<>();
+        counts.forEach((label, count) -> {
+            String severity = severityLabels.get(label);
+            parts.add(severity == null || severity.isBlank()
+                ? "%s %d건".formatted(label, count)
+                : "%s %d건(%s)".formatted(label, count, severity));
+        });
+        String head = EVIDENCE_PREFIX + String.join(", ", parts);
+
+        Map<String, Integer> before = previous == null ? null : parseCounts(previous.getEvidenceText());
+        if (before == null) {
+            return head + "\n첫 진단 · 종합 등급 " + grade.name();
+        }
+
+        List<String> deltas = new ArrayList<>();
+        Set<String> labels = new LinkedHashSet<>(counts.keySet());
+        labels.addAll(before.keySet());
+        for (String label : labels) {
+            int diff = counts.getOrDefault(label, 0) - before.getOrDefault(label, 0);
+            if (diff != 0) {
+                deltas.add("%s %+d건".formatted(label, diff));
+            }
+        }
+
+        String change = deltas.isEmpty() ? "직전 대비 변화 없음" : "직전 진단 대비 " + String.join(", ", deltas);
+        String gradePart = previous.getOverallGrade() == grade
+            ? "종합 등급 %s 유지".formatted(grade.name())
+            : "종합 등급 %s → %s".formatted(previous.getOverallGrade().name(), grade.name());
+
+        return head + "\n" + change + " · " + gradePart;
+    }
+
+    private Map<String, Integer> parseCounts(String evidenceText) {
+        if (evidenceText == null) {
+            return null;
+        }
+        if (evidenceText.startsWith(EVIDENCE_NONE)) {
+            return Map.of();
+        }
+        if (!evidenceText.startsWith(EVIDENCE_PREFIX)) {
+            return null;
+        }
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        Matcher matcher = COUNT_PATTERN.matcher(evidenceText.split("\n", 2)[0]);
+        while (matcher.find()) {
+            counts.put(matcher.group(1), Integer.parseInt(matcher.group(2)));
+        }
+        return counts;
     }
 
     private String truncate(String evidence) {
