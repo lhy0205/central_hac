@@ -50,6 +50,7 @@ export default function Home() {
   const [chromeHidden, setChromeHidden] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [cardIndex, setCardIndex] = useState(0);
+  const [feedFocused, setFeedFocused] = useState(true);
   const [bubbleOpen, setBubbleOpen] = useState(false);
   const hiddenRef = useRef(false);
 
@@ -68,6 +69,16 @@ export default function Home() {
     useCallback(() => {
       return () => setTabBarHidden(false);
     }, [setTabBarHidden]),
+  );
+
+  // 홈은 탭이라 다른 화면으로 가도 마운트된 채로 남는다. 그동안 배경 영상이 디코더를 계속
+  // 붙들고 있으면, AR이나 등록 스캔처럼 카메라·영상을 또 여는 화면에서 한도를 넘겨 앱이
+  // 통째로 죽는다. 포커스를 잃으면 영상을 떼고, 돌아오면 다시 붙인다.
+  useFocusEffect(
+    useCallback(() => {
+      setFeedFocused(true);
+      return () => setFeedFocused(false);
+    }, []),
   );
 
   useFocusEffect(
@@ -142,7 +153,7 @@ export default function Home() {
             {/* 안드로이드가 동시에 열 수 있는 하드웨어 비디오 디코더는 2~4개뿐이다. 슬라이드
                 4개의 Video를 한꺼번에 붙여 두면 MediaCodec이 바닥나 네이티브에서 앱이 그대로
                 죽는다(paused여도 디코더는 잡고 있다). 지금 슬라이드와 바로 이웃만 붙인다. */}
-            {Math.abs(index - activeSlide) <= 1 ? (
+            {feedFocused && Math.abs(index - activeSlide) <= 1 ? (
               <Video
                 // v6는 번들 에셋도 source.uri로 받는다.
                 source={{ uri: item.source }}
