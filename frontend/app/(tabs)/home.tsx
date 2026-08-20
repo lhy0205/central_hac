@@ -554,7 +554,10 @@ const styles = StyleSheet.create({
   dock: { position: "absolute", left: 0, right: 0 },
   dockInner: {
     marginHorizontal: 12,
-    backgroundColor: "#fff",
+    /* 겉 패널은 배경 영상이 비치도록 반투명, 안쪽 가방 카드는 그 위에 살짝만 더 얹는다.
+       두 겹이 겹치면 카드 부분의 흰 정도는 0.70 + 0.60 x 0.30 = 0.88이 된다 — 글자는
+       또렷하게 남고, 패널 가장자리("내 가방" 줄과 여백)로 영상이 비쳐 층이 느껴진다. */
+    backgroundColor: "rgba(255,255,255,0.7)",
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingTop: 12,
@@ -575,13 +578,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 2,
     borderColor: colors.line,
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255,255,255,0.6)",
     padding: 9,
     flexDirection: "row",
     gap: 11,
     minHeight: 150,
   },
-  thumb: { width: "40%", borderRadius: 6, backgroundColor: "#FBF9F6", padding: 4 },
+  thumb: { width: "40%", borderRadius: 6, backgroundColor: "rgba(251,249,246,0.7)", padding: 4 },
   thumbImage: { width: "100%", height: "100%", resizeMode: "contain" },
   info: { flex: 1, paddingTop: 4 },
   bagName: { fontSize: 13, fontWeight: "700", color: "#151515", marginBottom: 6 },
@@ -594,16 +597,21 @@ const styles = StyleSheet.create({
   btnPressed: { transform: [{ scale: 0.96 }] },
   btnPrimary: { backgroundColor: "#111" },
   btnPrimaryText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  btnGhost: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#CFCFCF" },
+  btnGhost: { backgroundColor: "rgba(255,255,255,0.75)", borderWidth: 1, borderColor: "#CFCFCF" },
   btnGhostText: { color: "#222", fontSize: 12 },
   diagLink: { fontSize: 11, color: "#9A9A9A", textAlign: "right", paddingTop: 6 },
 
   pendingCard: {
     borderStyle: "dashed",
     borderColor: "#C7BBA4",
-    backgroundColor: colors.stampPaper,
+    // 예비 여권도 같은 톤으로 맞춘다. 혼자 불투명하면 카드를 옆으로 넘길 때 튄다.
+    backgroundColor: "rgba(253,251,246,0.6)",
   },
-  pendingThumb: { backgroundColor: "#F3EDE2", alignItems: "center", justifyContent: "center" },
+  pendingThumb: {
+    backgroundColor: "rgba(243,237,226,0.7)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   pendingMark: { fontSize: 30, color: "#C4B69C" },
   pendingTag: {
     alignSelf: "flex-start",
@@ -630,7 +638,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  addPressed: { backgroundColor: "#FCFAF7" },
+  addPressed: { backgroundColor: "rgba(252,250,247,0.6)" },
   plus: { fontSize: 34, color: "#B5B5B5", marginBottom: 22 },
   addRule: { width: "78%", height: 1, backgroundColor: "#E3E3E3", marginBottom: 11 },
   addLabel: { fontSize: 12.5, color: "#8A8A8A" },
