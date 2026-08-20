@@ -9,8 +9,8 @@ import Svg, { Circle, G, Path } from "react-native-svg";
 // react-native-svg가 들어와 있으므로(스탬프에서 이미 쓴다) 전부 패스로 그린다.
 export type IconProps = { color: string; focused: boolean };
 
-const BOX = 36;
-const SIZE = 29;
+const BOX = 40;
+const SIZE = 33;
 const VIEW_BOX = "0 0 24 24";
 const STROKE = 1.7;
 
@@ -93,7 +93,7 @@ export function ArIcon({ color }: IconProps) {
 export function DiagnosisIcon({ color }: IconProps) {
   return (
     <View style={styles.iconBox}>
-      <Svg width={31} height={31} viewBox={VIEW_BOX}>
+      <Svg width={35} height={35} viewBox={VIEW_BOX}>
         <G transform={GROW}>
           <Circle
             cx={10.6}
@@ -175,5 +175,5 @@ export function ProfileIcon({ color }: IconProps) {
 
 export const styles = StyleSheet.create({
   iconBox: { width: BOX, height: BOX, alignItems: "center", justifyContent: "center" },
-  arText: { position: "absolute", fontSize: 13, fontWeight: "700", letterSpacing: 0.2 },
+  arText: { position: "absolute", fontSize: 14.5, fontWeight: "700", letterSpacing: 0.2 },
 });
