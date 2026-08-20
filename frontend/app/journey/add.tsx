@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 
-import { journeyApi } from "../../src/api/client";
+import { ApiError, journeyApi } from "../../src/api/client";
 import { validatePhotos, type PickedPhoto } from "../../src/components/PhotoPicker";
 import { Calendar } from "../../src/components/Calendar";
 import { useTabBarClearance } from "../../src/components/BottomTabBar";
@@ -33,12 +33,14 @@ const EVENT_TYPE_MAP: Record<string, "MOMENT" | "STORE_VISIT" | "SELF_CARE" | "O
 function isoDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
-// 선택한 날짜에 "지금" 시각을 붙인다. T00:00:00으로 고정하면 같은 날 실제 생성 시각을 쓰는
-// 다른 기록(진단·케어 등)보다 항상 타임라인에서 앞에 와버린다.
-function isoDateTime(dateStr: string) {
-  const now = new Date();
-  const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
-  return `${dateStr}T${time}`;
+// 서버는 eventDate를 @PastOrPresent LocalDateTime으로 검증하는데, 그 "지금"은 서버 JVM의
+// 기본 시간대(현재 컨테이너는 UTC) 기준이다. 기기의 KST 벽시계 시각을 그대로 보내면 서버 눈에는
+// 9시간 뒤 미래라 항상 400이 났다.
+//  - 오늘이면 아예 안 보낸다. TimelineEvent.prePersist가 서버 시계로 채워주므로 시간대와 무관하다.
+//  - 과거 날짜면 어느 시간대에서 봐도 과거인 정오로 보낸다. T00:00:00으로 고정하면 같은 날
+//    실제 생성 시각을 쓰는 다른 기록(진단·케어)보다 타임라인에서 항상 앞에 와버린다.
+function eventDateFor(dateStr: string) {
+  return dateStr === isoDate(new Date()) ? undefined : `${dateStr}T12:00:00`;
 }
 function displayDate(value: string) {
   return value.replaceAll("-", ". ");
@@ -97,13 +99,17 @@ export default function Add() {
         {
           eventType: EVENT_TYPE_MAP[type],
           note: memo ? `${title}\n${memo}` : title,
-          eventDate: isoDateTime(date),
+          eventDate: eventDateFor(date),
         },
         photos[0],
       );
       router.replace({ pathname: "/journey", params: { id } });
-    } catch {
-      Alert.alert("저장 실패", "기록 저장에 실패했습니다.");
+    } catch (error) {
+      // 통째로 삼키면 권한·시간대·네트워크 어느 쪽이 문제인지 알 수가 없다.
+      Alert.alert(
+        "저장 실패",
+        error instanceof ApiError ? error.message : "기록 저장에 실패했습니다.",
+      );
     } finally {
       setSaving(false);
     }
