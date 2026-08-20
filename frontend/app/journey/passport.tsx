@@ -38,9 +38,11 @@ const DETAIL_ROUTE: Record<string, string> = {
   USER_EVENT: "/journey/detail",
 };
 
-const STAMP_SIZE = 86;
-const NODE_GAP = 126;
-const MAP_TOP = 40;
+/* 스탬프가 클수록 한 화면에 두 개도 안 들어와, 스크롤 끝에서 늘 반쯤 잘린 도장이 보인다.
+   지도로 읽히려면 여러 개가 한눈에 들어와야 한다. */
+const STAMP_SIZE = 60;
+const NODE_GAP = 92;
+const MAP_TOP = 34;
 
 /* 스탬프를 좌우로 굽이치는 길 위에 놓는다. sin 곡선이라 개수가 늘어도 규칙이 유지된다.
    x는 맵 너비에 대한 비율, y는 픽셀. */
@@ -124,7 +126,7 @@ export default function Passport() {
         useNativeDriver: true,
       }),
       Animated.timing(flyScale, {
-        toValue: 62 / STAMP_SIZE,
+        toValue: 56 / STAMP_SIZE,
         duration: 520,
         easing: Easing.bezier(0.3, 0.8, 0.3, 1),
         useNativeDriver: true,
@@ -214,19 +216,25 @@ export default function Passport() {
 
       {/* 가방 정보는 고정한다. 스탬프를 따라 한참 내려가도 어느 가방의 여권인지 계속 보인다. */}
       <View style={styles.fixedTop}>
-        <View style={styles.hero}>
-          <Image source={bagImage} style={styles.heroImage} />
+        <View style={styles.heroRow}>
+          <View style={styles.hero}>
+            <Image source={bagImage} style={styles.heroImage} />
+          </View>
+          <View style={styles.heroInfo}>
+            <View style={styles.nameRow}>
+              <Text numberOfLines={2} style={styles.name}>
+                {passport.nickname || passport.modelName}
+              </Text>
+              {grade ? (
+                <Text style={[styles.gradeBadge, { backgroundColor: gradeColor(grade) }]}>
+                  등급 {grade}
+                </Text>
+              ) : null}
+            </View>
+            <Text style={styles.meta}>{passport.serialNumber}</Text>
+            <Text style={styles.meta}>{stampDate(passport.purchaseDate)} 개시</Text>
+          </View>
         </View>
-        <View style={styles.nameRow}>
-          <Text style={styles.name}>{passport.nickname || passport.modelName}</Text>
-          {grade ? (
-            <Text style={[styles.gradeBadge, { backgroundColor: gradeColor(grade) }]}>
-              등급 {grade}
-            </Text>
-          ) : null}
-        </View>
-        <Text style={styles.meta}>{passport.serialNumber}</Text>
-        <Text style={styles.meta}>{stampDate(passport.purchaseDate)} 개시</Text>
         <View style={styles.rule} />
         <Text style={styles.days}>
           <Text style={styles.diamond}>◆ </Text>
@@ -341,7 +349,7 @@ export default function Passport() {
             <View style={styles.rule} />
 
             <View style={styles.detailHead}>
-              <Stamp type={typeLabel(opened)} size={62} />
+              <Stamp type={typeLabel(opened)} size={56} />
               <Animated.View
                 style={[
                   styles.titlePill,
@@ -442,17 +450,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
+  heroRow: { flexDirection: "row", gap: 14, alignItems: "center" },
   hero: {
+    width: 104,
+    height: 104,
     borderWidth: 1,
     borderStyle: "dashed",
     borderColor: "#D4D0C9",
     borderRadius: 10,
-    padding: 14,
-    marginBottom: 14,
+    padding: 8,
     alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#FBFAF8",
   },
-  heroImage: { width: "66%", height: 150, resizeMode: "contain" },
+  heroImage: { width: "100%", height: "100%", resizeMode: "contain" },
+  heroInfo: { flex: 1, minWidth: 0 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 9, marginBottom: 6 },
   name: { flex: 1, fontSize: 14, fontWeight: "700", color: "#111" },
   gradeBadge: {
@@ -465,7 +477,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   meta: { fontSize: 11.5, color: "#9A9A9A", marginBottom: 3 },
-  rule: { height: 1, backgroundColor: "#E6E1D8", marginVertical: 14 },
+  rule: { height: 1, backgroundColor: "#E6E1D8", marginVertical: 12 },
   days: { fontSize: 13, color: "#2A2A2A", marginBottom: 6 },
   diamond: { color: colors.gold, fontSize: 9 },
 
