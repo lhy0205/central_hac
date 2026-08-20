@@ -50,7 +50,7 @@ Concierge     →    AR 제품     →    시리얼 스캔   →   진단 → �
 안드로이드만 배포합니다. "출처를 알 수 없는 앱" 설치를 허용해야 할 수 있습니다.
 
 - **APK 내려받기**: https://github.com/lhy0205/central_hac/releases/download/v1.0.0/CarePassport.apk
-- QR·설치 페이지: https://expo.dev/accounts/leeeee12/projects/mcm-care-mobile/builds/f606decf-8590-4510-bffe-0f287c712636
+- QR·설치 페이지: https://expo.dev/accounts/leeeee12/projects/mcm-care-mobile/builds/5b7b175b-ba3e-4209-9fc6-fb5d51dfe367
 
 iOS는 코드 수준에서 지원합니다(카메라·사진첩 권한, 평문 HTTP 예외 설정 포함). 다만 실기기
 배포에는 Apple Developer Program 계정이 필요해 이번 제출에는 포함하지 않았습니다.
