@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Path } from "react-native-svg";
+import Svg, { Circle, G, Path } from "react-native-svg";
 
 // (tabs)/_layout.tsx의 실제 탭바와 BottomTabBar(탭 네비게이터 밖 화면용 대체 탭바)가
 // 똑같은 아이콘을 쓰도록 공유하는 파일.
@@ -13,6 +13,14 @@ const BOX = 36;
 const SIZE = 29;
 const VIEW_BOX = "0 0 24 24";
 const STROKE = 1.7;
+
+/* 도안이 24짜리 상자 안에서 17.2만 채우고 있어 아이콘이 작아 보였다. 20을 채우도록 키운다.
+   좌표를 하나씩 다시 계산하면 호의 반지름까지 어긋나기 쉬워, 가운데를 기준으로 통째로
+   확대한다. 선 굵기는 확대 배율만큼 미리 나눠 둔다 — 그래야 커진 뒤에도 굵기가 그대로다.
+   배율은 다섯 아이콘에 똑같이 건다. 각자 20에 맞추면 서로의 비례가 깨진다. */
+const SCALE = 20 / 17.2;
+const GROW = `translate(12 12) scale(${SCALE}) translate(-12 -12)`;
+const LINE = STROKE / SCALE;
 
 export function Diamond({ color, size = 8 }: { color: string; size?: number }) {
   return (
@@ -31,24 +39,26 @@ export function HomeIcon({ color }: IconProps) {
   return (
     <View style={styles.iconBox}>
       <Svg width={SIZE} height={SIZE} viewBox={VIEW_BOX}>
-        {/* 지붕에서 벽, 바닥까지 한 붓으로 잇는다. 조각을 따로 두면 꼭짓점이 벌어진다. */}
-        <Path
-          d="M3.6 10.4 L12 3.6 L20.4 10.4 V20.2 H3.6 Z"
-          stroke={color}
-          strokeWidth={STROKE}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-        {/* 바닥에 붙은 아치형 문 */}
-        <Path
-          d="M9.9 20.2 V15.9 a2.1 2.1 0 0 1 4.2 0 V20.2"
-          stroke={color}
-          strokeWidth={STROKE}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
+        <G transform={GROW}>
+          {/* 지붕에서 벽, 바닥까지 한 붓으로 잇는다. 조각을 따로 두면 꼭짓점이 벌어진다. */}
+          <Path
+            d="M3.6 10.4 L12 3.6 L20.4 10.4 V20.2 H3.6 Z"
+            stroke={color}
+            strokeWidth={LINE}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+          {/* 바닥에 붙은 아치형 문 */}
+          <Path
+            d="M9.9 20.2 V15.9 a2.1 2.1 0 0 1 4.2 0 V20.2"
+            stroke={color}
+            strokeWidth={LINE}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </G>
       </Svg>
     </View>
   );
@@ -59,17 +69,19 @@ export function ArIcon({ color }: IconProps) {
   return (
     <View style={styles.iconBox}>
       <Svg width={SIZE} height={SIZE} viewBox={VIEW_BOX}>
-        <Path
-          d="M3.4 8.6 V5.6 a2.2 2.2 0 0 1 2.2 -2.2 h3
+        <G transform={GROW}>
+          <Path
+            d="M3.4 8.6 V5.6 a2.2 2.2 0 0 1 2.2 -2.2 h3
              M20.6 8.6 V5.6 a2.2 2.2 0 0 0 -2.2 -2.2 h-3
              M20.6 15.4 V18.4 a2.2 2.2 0 0 1 -2.2 2.2 h-3
              M3.4 15.4 V18.4 a2.2 2.2 0 0 0 2.2 2.2 h3"
-          stroke={color}
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
+            stroke={color}
+            strokeWidth={1.8 / SCALE}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </G>
       </Svg>
       {/* 글자는 SVG Text 대신 RN Text로 둔다 — 앱 글꼴이 그대로 적용돼 나머지 UI와 붙는다. */}
       <Text style={[styles.arText, { color }]}>AR</Text>
@@ -82,14 +94,23 @@ export function DiagnosisIcon({ color }: IconProps) {
   return (
     <View style={styles.iconBox}>
       <Svg width={31} height={31} viewBox={VIEW_BOX}>
-        <Circle cx={10.6} cy={10.6} r={6.6} stroke={color} strokeWidth={2.1} fill="none" />
-        <Path
-          d="M15.5 15.5 L20.4 20.4"
-          stroke={color}
-          strokeWidth={2.1}
-          strokeLinecap="round"
-          fill="none"
-        />
+        <G transform={GROW}>
+          <Circle
+            cx={10.6}
+            cy={10.6}
+            r={6.6}
+            stroke={color}
+            strokeWidth={2.1 / SCALE}
+            fill="none"
+          />
+          <Path
+            d="M15.5 15.5 L20.4 20.4"
+            stroke={color}
+            strokeWidth={2.1 / SCALE}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </G>
       </Svg>
     </View>
   );
@@ -100,31 +121,33 @@ export function JourneyIcon({ color }: IconProps) {
   return (
     <View style={styles.iconBox}>
       <Svg width={SIZE} height={SIZE} viewBox={VIEW_BOX}>
-        {/* 손잡이 */}
-        <Path
-          d="M9.4 6.2 V5.2 a1.6 1.6 0 0 1 1.6-1.6 h2 a1.6 1.6 0 0 1 1.6 1.6 v1"
-          stroke={color}
-          strokeWidth={STROKE}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-        {/* 가방 몸통 */}
-        <Path
-          d="M6 6.2 h12 a2.4 2.4 0 0 1 2.4 2.4 v9.4 a2.4 2.4 0 0 1 -2.4 2.4 h-12
+        <G transform={GROW}>
+          {/* 손잡이 */}
+          <Path
+            d="M9.4 6.2 V5.2 a1.6 1.6 0 0 1 1.6-1.6 h2 a1.6 1.6 0 0 1 1.6 1.6 v1"
+            stroke={color}
+            strokeWidth={LINE}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+          {/* 가방 몸통 */}
+          <Path
+            d="M6 6.2 h12 a2.4 2.4 0 0 1 2.4 2.4 v9.4 a2.4 2.4 0 0 1 -2.4 2.4 h-12
              a2.4 2.4 0 0 1 -2.4 -2.4 v-9.4 a2.4 2.4 0 0 1 2.4 -2.4 z"
-          stroke={color}
-          strokeWidth={STROKE}
-          strokeLinejoin="round"
-          fill="none"
-        />
-        <Path
-          d="M8.7 13.4 L15.6 10.1 L12.3 17 L11.5 14.2 Z"
-          stroke={color}
-          strokeWidth={STROKE}
-          strokeLinejoin="round"
-          fill="none"
-        />
+            stroke={color}
+            strokeWidth={LINE}
+            strokeLinejoin="round"
+            fill="none"
+          />
+          <Path
+            d="M8.7 13.4 L15.6 10.1 L12.3 17 L11.5 14.2 Z"
+            stroke={color}
+            strokeWidth={LINE}
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </G>
       </Svg>
     </View>
   );
@@ -134,15 +157,17 @@ export function ProfileIcon({ color }: IconProps) {
   return (
     <View style={styles.iconBox}>
       <Svg width={SIZE} height={SIZE} viewBox={VIEW_BOX}>
-        <Circle cx={12} cy={8.4} r={4.1} stroke={color} strokeWidth={STROKE} fill="none" />
-        {/* 어깨선. 양 끝을 닫지 않아야 원본처럼 열린 호로 보인다. */}
-        <Path
-          d="M4.6 20.4 a7.4 7.4 0 0 1 14.8 0"
-          stroke={color}
-          strokeWidth={STROKE}
-          strokeLinecap="round"
-          fill="none"
-        />
+        <G transform={GROW}>
+          <Circle cx={12} cy={8.4} r={4.1} stroke={color} strokeWidth={LINE} fill="none" />
+          {/* 어깨선. 양 끝을 닫지 않아야 원본처럼 열린 호로 보인다. */}
+          <Path
+            d="M4.6 20.4 a7.4 7.4 0 0 1 14.8 0"
+            stroke={color}
+            strokeWidth={LINE}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </G>
       </Svg>
     </View>
   );
@@ -150,5 +175,5 @@ export function ProfileIcon({ color }: IconProps) {
 
 export const styles = StyleSheet.create({
   iconBox: { width: BOX, height: BOX, alignItems: "center", justifyContent: "center" },
-  arText: { position: "absolute", fontSize: 11.5, fontWeight: "700", letterSpacing: 0.2 },
+  arText: { position: "absolute", fontSize: 13, fontWeight: "700", letterSpacing: 0.2 },
 });
