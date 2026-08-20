@@ -309,7 +309,7 @@ export default function Diagnosis() {
       {showIntro ? (
         <View style={styles.introLayer}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowIntro(false)} />
-          <View style={styles.introSheet}>
+          <View style={[styles.introSheet, { paddingBottom: bottomPad }]}>
             <View style={styles.introGrip} />
             <Text style={styles.introTitle}>AI 마모 진단</Text>
             <Text style={styles.introDesc}>

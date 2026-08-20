@@ -67,7 +67,9 @@
     "extra": {
       "apiBaseUrl": "${EXPO_PUBLIC_API_BASE_URL}",
       "router": {},
-      "eas": {}
+      "eas": {
+        "projectId": "1852d026-3da4-4b77-8b10-024053e33c45"
+      }
     },
     "owner": "leeeee12"
   }
