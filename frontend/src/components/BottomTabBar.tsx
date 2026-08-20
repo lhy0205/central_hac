@@ -25,12 +25,14 @@ const BAR_HEIGHT = 70;
 const CENTER_RISE = 26;
 // 알약이 화면 바닥에서 띄워지는 최소 높이.
 const BAR_LIFT = 10;
+// 내비게이션 바가 있는 기기에서 알약이 그 위에 딱 붙어 답답해 보인다. 그만큼 더 띄운다.
+const BAR_GAP = 10;
 
 // 떠 있는 알약 모양이라 화면 콘텐츠가 이만큼은 아래를 비워둬야 가리지 않는다.
 // 내비게이션 바(insets.bottom)를 못 세면 기기마다 딱 그만큼씩 가려지므로 훅으로 계산한다.
 export function useTabBarClearance(extra = 0) {
   const insets = useSafeAreaInsets();
-  return Math.max(insets.bottom, BAR_LIFT) + BAR_HEIGHT + CENTER_RISE + extra;
+  return Math.max(insets.bottom, BAR_LIFT) + BAR_GAP + BAR_HEIGHT + CENTER_RISE + extra;
 }
 
 export function TabBarView({
@@ -61,7 +63,7 @@ export function TabBarView({
       style={[
         styles.bar,
         {
-          bottom: Math.max(insets.bottom, BAR_LIFT),
+          bottom: Math.max(insets.bottom, BAR_LIFT) + BAR_GAP,
           opacity: shift.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
           transform: [{ translateY }],
         },

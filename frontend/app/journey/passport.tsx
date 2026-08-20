@@ -210,7 +210,8 @@ export default function Passport() {
     <View style={styles.screen}>
       <Header title="여권" back />
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad }]}>
+      {/* 가방 정보는 고정한다. 스탬프를 따라 한참 내려가도 어느 가방의 여권인지 계속 보인다. */}
+      <View style={styles.fixedTop}>
         <View style={styles.hero}>
           <Image source={bagImage} style={styles.heroImage} />
         </View>
@@ -229,8 +230,10 @@ export default function Passport() {
           <Text style={styles.diamond}>◆ </Text>
           {items.length}개의 여정 스탬프
         </Text>
+      </View>
 
-        {/* 3D 맵: 원근을 준 길 위에 도장이 놓인다. */}
+      {/* 지도만 스크롤한다. 스크롤 영역이 아래 버튼 위에서 끝나므로 스탬프가 버튼에 가리지 않는다. */}
+      <ScrollView style={styles.mapScroll} contentContainerStyle={styles.mapScrollContent}>
         <View style={[styles.mapWrap, { height: mapHeight }]}>
           <View style={[styles.map, { width: mapWidth, height: mapHeight }]}>
             {items.slice(0, -1).map((_, index) => {
@@ -278,22 +281,23 @@ export default function Passport() {
             })}
           </View>
         </View>
-
-        <View style={styles.actions}>
-          <Pressable
-            onPress={() => router.push({ pathname: "/journey/transfer", params: { id } })}
-            style={({ pressed }) => [styles.outline, pressed && styles.pressed]}
-          >
-            <Text style={styles.outlineText}>여권 승계</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push({ pathname: "/journey/add", params: { id } })}
-            style={({ pressed }) => [styles.filled, pressed && styles.pressed]}
-          >
-            <Text style={styles.filledText}>＋ 기록 추가</Text>
-          </Pressable>
-        </View>
       </ScrollView>
+
+      {/* 버튼은 화면에 고정한다. 스크롤이 여기서 끝나 스탬프가 버튼 아래로 넘어가지 않는다. */}
+      <View style={[styles.mapActions, { paddingBottom: bottomPad }]}>
+        <Pressable
+          onPress={() => router.push({ pathname: "/journey/transfer", params: { id } })}
+          style={({ pressed }) => [styles.outline, pressed && styles.pressed]}
+        >
+          <Text style={styles.outlineText}>여권 승계</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push({ pathname: "/journey/add", params: { id } })}
+          style={({ pressed }) => [styles.filled, pressed && styles.pressed]}
+        >
+          <Text style={styles.filledText}>＋ 기록 추가</Text>
+        </Pressable>
+      </View>
 
       {/* 날아가는 도장 (착지하면 사라지고 상세가 뜬다) */}
       <Animated.View
@@ -312,7 +316,7 @@ export default function Passport() {
       </Animated.View>
 
       {opened != null ? (
-        <View style={styles.detailLayer}>
+        <Animated.View style={[styles.detailLayer, { opacity: unfurl }]}>
           <ScrollView
             contentContainerStyle={[
               styles.content,
@@ -412,7 +416,7 @@ export default function Passport() {
               ) : null}
             </View>
           </ScrollView>
-        </View>
+        </Animated.View>
       ) : null}
 
       <BottomTabBar active="journey" />
@@ -425,6 +429,16 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   errorText: { fontSize: 13, color: "#666" },
   content: { padding: 20 },
+  fixedTop: { paddingHorizontal: 20, paddingTop: 20 },
+  mapScroll: { flex: 1 },
+  mapScrollContent: { paddingHorizontal: 20, paddingBottom: 20 },
+  mapActions: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    backgroundColor: "#fff",
+  },
 
   hero: {
     borderWidth: 1,
@@ -454,7 +468,10 @@ const styles = StyleSheet.create({
   diamond: { color: colors.gold, fontSize: 9 },
 
   mapWrap: { alignItems: "center", marginTop: 10 },
-  map: { transform: [{ perspective: 1000 }, { rotateX: "17deg" }] },
+  map: {
+    transform: [{ perspective: 2200 }, { rotateX: "8deg" }],
+    transformOrigin: "50% 0%",
+  },
   path: {
     position: "absolute",
     height: 10,
