@@ -133,17 +133,26 @@ export default function Home() {
         scrollEventThrottle={16}
         onViewableItemsChanged={onViewable}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
+        // 아래 renderItem이 이웃만 붙이도록 해도, FlatList가 창을 넓게 잡으면 소용이 없다.
+        initialNumToRender={1}
+        maxToRenderPerBatch={1}
+        windowSize={3}
         renderItem={({ item, index }) => (
           <View style={[styles.slide, { height: SCREEN_H }]}>
-            <Video
-              // v6는 번들 에셋도 source.uri로 받는다.
-              source={{ uri: item.source }}
-              style={StyleSheet.absoluteFillObject}
-              resizeMode="cover"
-              repeat
-              muted
-              paused={index !== activeSlide}
-            />
+            {/* 안드로이드가 동시에 열 수 있는 하드웨어 비디오 디코더는 2~4개뿐이다. 슬라이드
+                4개의 Video를 한꺼번에 붙여 두면 MediaCodec이 바닥나 네이티브에서 앱이 그대로
+                죽는다(paused여도 디코더는 잡고 있다). 지금 슬라이드와 바로 이웃만 붙인다. */}
+            {Math.abs(index - activeSlide) <= 1 ? (
+              <Video
+                // v6는 번들 에셋도 source.uri로 받는다.
+                source={{ uri: item.source }}
+                style={StyleSheet.absoluteFillObject}
+                resizeMode="cover"
+                repeat
+                muted
+                paused={index !== activeSlide}
+              />
+            ) : null}
             <View style={styles.scrimTop} pointerEvents="none" />
             <View style={styles.scrimBottom} pointerEvents="none" />
             <View style={[styles.adTag, { bottom: chromeHidden ? 150 : 330 }]} pointerEvents="none">
