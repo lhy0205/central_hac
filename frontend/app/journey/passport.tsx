@@ -44,6 +44,26 @@ const STAMP_SIZE = 60;
 const NODE_GAP = 84;
 const MAP_TOP = 34;
 
+const TILT_DEG = 13;
+const PERSPECTIVE = 1500;
+
+/* 지도를 눕히면 회전축을 기준으로 위는 멀어지고 아래는 가까워진다. 축을 위 모서리로 옮기려고
+   transformOrigin을 줬는데 이 환경에서는 먹지 않아 가운데를 축으로 돈다. 그래서 스탬프가
+   많을수록 지도 위쪽이 통째로 아래로 밀려 "N개의 여정 스탬프" 아래에 빈 칸이 생겼다
+   (18개 기준 101dp).
+
+   축을 옮기는 대신 밀리는 양을 직접 계산해 그만큼 끌어올린다. 눕힌 뒤의 실제 높이도 같이
+   구해 스크롤 길이를 맞춘다 — 안 그러면 끝에서 허공을 스크롤하게 된다. */
+function tiltMetrics(height: number) {
+  const rad = (TILT_DEG * Math.PI) / 180;
+  const half = height / 2;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const top = half * cos * (PERSPECTIVE / (PERSPECTIVE + half * sin));
+  const bottom = half * cos * (PERSPECTIVE / Math.max(1, PERSPECTIVE - half * sin));
+  return { shift: half - top, visualHeight: top + bottom };
+}
+
 /* 스탬프를 좌우로 굽이치는 길 위에 놓는다. sin 곡선이라 개수가 늘어도 규칙이 유지된다.
    x는 맵 너비에 대한 비율, y는 픽셀. */
 function nodePos(index: number, width: number) {
@@ -208,6 +228,7 @@ export default function Passport() {
   }
 
   const mapHeight = nodePos(Math.max(items.length - 1, 0), mapWidth).y + 110;
+  const tilt = tiltMetrics(mapHeight);
   const opened = openIndex != null ? items[openIndex] : null;
 
   return (
@@ -244,7 +265,7 @@ export default function Passport() {
 
       {/* 지도만 스크롤한다. 스크롤 영역이 아래 버튼 위에서 끝나므로 스탬프가 버튼에 가리지 않는다. */}
       <ScrollView style={styles.mapScroll} contentContainerStyle={styles.mapScrollContent}>
-        <View style={[styles.mapWrap, { height: mapHeight }]}>
+        <View style={[styles.mapWrap, { height: tilt.visualHeight, marginTop: 10 - tilt.shift }]}>
           <View style={[styles.map, { width: mapWidth, height: mapHeight }]}>
             {items.slice(0, -1).map((_, index) => {
               const a = nodePos(index, mapWidth);
@@ -450,15 +471,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
-  heroRow: { flexDirection: "row", gap: 14, alignItems: "center" },
+  heroRow: { flexDirection: "row", gap: 18, alignItems: "center" },
   hero: {
-    width: 84,
-    height: 84,
+    width: 109,
+    height: 109,
     borderWidth: 1,
     borderStyle: "dashed",
     borderColor: "#D4D0C9",
-    borderRadius: 10,
-    padding: 8,
+    borderRadius: 12,
+    padding: 10,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#FBFAF8",
@@ -466,28 +487,24 @@ const styles = StyleSheet.create({
   heroImage: { width: "100%", height: "100%", resizeMode: "contain" },
   heroInfo: { flex: 1, minWidth: 0 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 9, marginBottom: 6 },
-  name: { flex: 1, fontSize: 14, fontWeight: "700", color: "#111" },
+  name: { flex: 1, fontSize: 18, fontWeight: "700", color: "#111" },
   gradeBadge: {
     color: "#fff",
-    fontSize: 10.5,
+    fontSize: 13,
     fontWeight: "700",
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
     borderRadius: 4,
     overflow: "hidden",
   },
-  meta: { fontSize: 11.5, color: "#9A9A9A", marginBottom: 3 },
+  meta: { fontSize: 15, color: "#9A9A9A", marginBottom: 4 },
   rule: { height: 1, backgroundColor: "#E6E1D8", marginVertical: 9 },
-  days: { fontSize: 13, color: "#2A2A2A", marginBottom: 2 },
-  diamond: { color: colors.gold, fontSize: 9 },
+  days: { fontSize: 17, color: "#2A2A2A", marginBottom: 4 },
+  diamond: { color: colors.gold, fontSize: 12 },
 
-  mapWrap: { alignItems: "center", marginTop: 10 },
-  map: {
-    /* 위 모서리를 축으로 눕힌다. 가운데를 축으로 두면 스탬프가 많을 때 상단이 통째로 수축한다.
-       시점 거리를 좁힐수록 아래로 갈수록 멀어 보이는 정도가 세진다. */
-    transform: [{ perspective: 1500 }, { rotateX: "13deg" }],
-    transformOrigin: "50% 0%",
-  },
+  mapWrap: { alignItems: "center" },
+  // 시점 거리를 좁힐수록 아래로 갈수록 멀어 보이는 정도가 세진다. 밀리는 보정은 tiltMetrics가 한다.
+  map: { transform: [{ perspective: PERSPECTIVE }, { rotateX: `${TILT_DEG}deg` }] },
   path: {
     position: "absolute",
     height: 10,
