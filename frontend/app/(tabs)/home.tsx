@@ -53,6 +53,12 @@ export default function Home() {
   const [feedFocused, setFeedFocused] = useState(true);
   // Concierge에서 관심 등록한 제품. 아직 산 게 아니라 서버 여권이 없으므로 기기에서 읽는다.
   const [pending, setPending] = useState<PendingPassport[]>([]);
+  /* 슬라이드 높이를 Dimensions의 window로 잡으면 안 된다. edge-to-edge라 실제 뷰포트는
+     내비게이션 바까지 덮는데 window는 그걸 뺀 값이라, 한 장이 화면보다 짧아져 넘길 때
+     아래에 검은 띠가 생기고 페이징도 어긋난다. 리스트가 차지한 높이를 직접 재서 쓴다. */
+  const [feedHeight, setFeedHeight] = useState(SCREEN_H);
+  // 광고 문구가 "내 가방" 카드 뒤에 깔리지 않도록, 카드가 실제로 차지한 높이만큼 띄운다.
+  const [dockHeight, setDockHeight] = useState(0);
   const [bubbleOpen, setBubbleOpen] = useState(false);
   const hiddenRef = useRef(false);
 
@@ -124,6 +130,14 @@ export default function Home() {
 
   // 배경 광고를 조금이라도 내리면 아이콘바와 내 가방이 통째로 사라지고,
   // 맨 위까지 되돌아오면 다시 나타난다.
+  // 24px을 넘겨야 사라지면 카드가 잠깐 버티다 없어져 걸리적거린다. 끌기 시작하면 바로 치운다.
+  const onFeedDragStart = () => {
+    if (hiddenRef.current) return;
+    hiddenRef.current = true;
+    setChromeHidden(true);
+    setTabBarHidden(true);
+  };
+
   const onFeedScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = event.nativeEvent.contentOffset.y;
     const next = y > 24 ? true : y <= 2 ? false : hiddenRef.current;
@@ -157,15 +171,23 @@ export default function Home() {
         pagingEnabled
         showsVerticalScrollIndicator={false}
         onScroll={onFeedScroll}
+        onScrollBeginDrag={onFeedDragStart}
         scrollEventThrottle={16}
+        onLayout={(event) => setFeedHeight(event.nativeEvent.layout.height)}
         onViewableItemsChanged={onViewable}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
-        // 아래 renderItem이 이웃만 붙이도록 해도, FlatList가 창을 넓게 잡으면 소용이 없다.
-        initialNumToRender={1}
-        maxToRenderPerBatch={1}
+        /* 높이가 모든 장에서 같으니 미리 알려준다 — FlatList가 위치를 재지 않아 페이징이
+           어긋나지 않고, 다음 장을 늦게 그려 검은 띠가 뜨는 일도 없다. */
+        getItemLayout={(_, index) => ({
+          length: feedHeight,
+          offset: feedHeight * index,
+          index,
+        })}
+        initialNumToRender={2}
+        maxToRenderPerBatch={2}
         windowSize={3}
         renderItem={({ item, index }) => (
-          <View style={[styles.slide, { height: SCREEN_H }]}>
+          <View style={[styles.slide, { height: feedHeight }]}>
             {/* 안드로이드가 동시에 열 수 있는 하드웨어 비디오 디코더는 2~4개뿐이다. 슬라이드
                 4개의 Video를 한꺼번에 붙여 두면 MediaCodec이 바닥나 네이티브에서 앱이 그대로
                 죽는다(paused여도 디코더는 잡고 있다). 지금 슬라이드와 바로 이웃만 붙인다. */}
@@ -182,7 +204,13 @@ export default function Home() {
             ) : null}
             <View style={styles.scrimTop} pointerEvents="none" />
             <View style={styles.scrimBottom} pointerEvents="none" />
-            <View style={[styles.adTag, { bottom: chromeHidden ? 150 : 330 }]} pointerEvents="none">
+            <View
+              style={[
+                styles.adTag,
+                { bottom: chromeHidden ? insets.bottom + 34 : dockBottom + dockHeight + 14 },
+              ]}
+              pointerEvents="none"
+            >
               <Text style={styles.adBadge}>{item.badge}</Text>
               <Text style={styles.adTitle}>{item.title}</Text>
               <Text style={styles.adCaption}>{item.caption}</Text>
@@ -232,7 +260,10 @@ export default function Home() {
       {/* 탭바가 실제로 차지하는 높이(내비게이션 바 포함)만큼 띄워야 카드가 안 가린다. */}
       {!chromeHidden && (
         <View style={[styles.dock, { bottom: dockBottom }]} pointerEvents="box-none">
-          <View style={styles.dockInner}>
+          <View
+            onLayout={(event) => setDockHeight(event.nativeEvent.layout.height)}
+            style={styles.dockInner}
+          >
             <Text style={styles.dockLabel}>내 가방</Text>
 
             {loading ? (
