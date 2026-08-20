@@ -15,3 +15,8 @@ server/ar-identification/detection/weights/*.pt
 server/ar-identification/identification/checkpoints/*.pt
 server/ar-identification/data/gallery/*.npz
 .env
+
+# expo prebuild가 만드는 네이티브 프로젝트. EAS 빌드 한도를 다 썼을 때 로컬에서
+# gradlew로 APK를 뽑으려면 필요하지만, 생성물이라 저장소에 두지 않는다.
+android/
+ios/

@@ -138,7 +138,7 @@ export default function Detail() {
             <AppButton
               outline
               title="여권 타임라인"
-              onPress={() => router.push({ pathname: "/journey", params: { id } })}
+              onPress={() => router.push({ pathname: "/journey/passport", params: { id } })}
             />
           </View>
           <View style={{ flex: 1 }}>

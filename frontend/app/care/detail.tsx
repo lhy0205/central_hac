@@ -51,7 +51,7 @@ export default function CareDetail() {
           title="돌아가기"
           onPress={() =>
             passportId
-              ? router.replace({ pathname: "/journey", params: { id: passportId } })
+              ? router.replace({ pathname: "/journey/passport", params: { id: passportId } })
               : router.back()
           }
         />

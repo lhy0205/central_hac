@@ -61,15 +61,14 @@
             "usesCleartextTraffic": true
           }
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "apiBaseUrl": "${EXPO_PUBLIC_API_BASE_URL}",
       "router": {},
-      "eas": {
-        "projectId": "e50be73d-610d-4af9-b500-3ef430d49012"
-      }
+      "eas": {}
     },
-    "owner": "leesudal"
+    "owner": "leeeee12"
   }
 }

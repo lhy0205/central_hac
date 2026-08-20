@@ -29,6 +29,14 @@ import { colors, gradeColor } from "../../src/theme";
 
 const bagImage = require("../../assets/mcm-bag.png");
 
+/* 스탬프 종류별로 원본을 보여주는 화면이 따로 있다. 요약만 띄우고 끝내면 진단 점수·사진 같은
+   원본 정보로 갈 길이 없어진다. 여기 없는 종류(등록·알림·승계)는 전용 화면이 아직 없다. */
+const DETAIL_ROUTE: Record<string, string> = {
+  DIAGNOSIS: "/diagnosis/result",
+  CARE: "/care/detail",
+  USER_EVENT: "/journey/detail",
+};
+
 const STAMP_SIZE = 86;
 const NODE_GAP = 126;
 const MAP_TOP = 40;
@@ -340,6 +348,21 @@ export default function Passport() {
               >
                 <Text style={styles.outlineText}>여권으로 돌아가기</Text>
               </Pressable>
+              {DETAIL_ROUTE[opened.type] ? (
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: DETAIL_ROUTE[opened.type] as never,
+                      params: { id: String(opened.id), passportId: id },
+                    })
+                  }
+                  style={({ pressed }) => [styles.filled, pressed && styles.pressed]}
+                >
+                  <Text style={styles.filledText}>
+                    {opened.type === "DIAGNOSIS" ? "진단 결과 보기" : "자세히 보기"}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           </ScrollView>
         </View>

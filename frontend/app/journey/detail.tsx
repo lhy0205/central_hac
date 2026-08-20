@@ -105,7 +105,7 @@ export default function Detail() {
                     await journeyApi.remove(id);
                     router.replace(
                       passportId
-                        ? { pathname: "/journey", params: { id: passportId } }
+                        ? { pathname: "/journey/passport", params: { id: passportId } }
                         : "/journey",
                     );
                   } catch {

@@ -310,7 +310,9 @@ export default function Result() {
               title="여권에서 보기"
               onPress={() =>
                 router.push(
-                  passportId ? { pathname: "/journey", params: { id: passportId } } : "/journey",
+                  passportId
+                    ? { pathname: "/journey/passport", params: { id: passportId } }
+                    : "/(tabs)/journey",
                 )
               }
             />

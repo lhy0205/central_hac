@@ -89,6 +89,14 @@ export default function Concierge() {
     }),
   ).current;
 
+  /* 상세가 목록 위에 덮이므로, 상세가 다 열린 동안에는 목록을 감춰야 한다. 반투명 베일만
+     두면 아래 검색바와 카드가 비쳐 글이 겹쳐 읽힌다. 미는 양에 맞춰 목록이 다시 드러나니
+     빠져나가는 느낌은 그대로다. */
+  const listOpacity = dragX.interpolate({
+    inputRange: [0, SCREEN_W],
+    outputRange: [0, 1],
+  });
+
   function openDetail(item: Collection) {
     dragX.setValue(SCREEN_W);
     setOpened(item);
@@ -125,7 +133,7 @@ export default function Concierge() {
       />
       <View style={styles.scrim} pointerEvents="none" />
 
-      <View style={styles.layer}>
+      <Animated.View style={[styles.layer, { opacity: listOpacity }]}>
         <View style={[styles.topRow, { paddingTop: insets.top + 6 }]}>
           <Pressable accessibilityLabel="뒤로가기" hitSlop={12} onPress={() => router.back()}>
             <Text style={styles.back}>‹</Text>
@@ -240,7 +248,7 @@ export default function Concierge() {
             />
           </>
         )}
-      </View>
+      </Animated.View>
 
       {/* 이야기 상세. 새 라우트를 만들지 않고 목록 위에 덮는다. 오른쪽으로 밀면 미는 만큼
           따라 빠져나가면서 아래 목록이 그대로 드러난다 — 돌아가는 순간이 끊기지 않는다. */}
@@ -301,7 +309,7 @@ const styles = StyleSheet.create({
   scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(12,8,4,0.42)" },
   layer: { flex: 1 },
   /* 목록 위에 덮이므로 자기 베일을 갖는다. 투명하면 미는 동안 두 화면이 겹쳐 보인다. */
-  detailLayer: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(12,8,4,0.62)" },
+  detailLayer: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(12,8,4,0.34)" },
 
   topRow: {
     flexDirection: "row",

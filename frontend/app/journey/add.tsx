@@ -103,7 +103,7 @@ export default function Add() {
         },
         photos[0],
       );
-      router.replace({ pathname: "/journey", params: { id } });
+      router.replace({ pathname: "/journey/passport", params: { id } });
     } catch (error) {
       // 통째로 삼키면 권한·시간대·네트워크 어느 쪽이 문제인지 알 수가 없다.
       Alert.alert(
