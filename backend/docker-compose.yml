@@ -29,6 +29,9 @@ services:
     ports:
       - "8080:8080"
     environment:
+      # LocalDateTime의 "지금"은 JVM 기본 시간대로 정해진다. 지정하지 않으면 컨테이너가
+      # UTC로 돌아, 앱이 보내는 KST 시각이 @PastOrPresent 검증에서 미래로 판정돼 400이 난다.
+      TZ: Asia/Seoul
       DB_URL: jdbc:postgresql://db:5432/mcm_passport
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
