@@ -207,7 +207,13 @@ export default function Home() {
             <View
               style={[
                 styles.adTag,
-                { bottom: chromeHidden ? insets.bottom + 34 : dockBottom + dockHeight + 14 },
+                {
+                  /* 카드가 사라지면 화면 아래가 통째로 비는데, 문구를 바닥에 붙여 두면
+                     고개를 숙여야 읽힌다. 아래에서 4분의 1쯤 되는 자리로 올려 눈높이에 맞춘다. */
+                  bottom: chromeHidden
+                    ? Math.round(feedHeight * 0.26)
+                    : dockBottom + dockHeight + 14,
+                },
               ]}
               pointerEvents="none"
             >
