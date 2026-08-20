@@ -18,14 +18,14 @@ function EmptyPassportArtwork() {
     <View style={styles.art}>
       <View style={styles.backPaper}>
         <Text style={styles.paperLines}>
-          MCM{`\n`}CARE{`\n`}· · · ·
+          CARE{`\n`}PASSPORT{`\n`}· · · ·
         </Text>
       </View>
       <View style={styles.book}>
         <View style={styles.spine} />
         <View style={styles.leftPage}>
           <Text style={styles.mcm}>MCM</Text>
-          <Text style={styles.passport}>NOMAD PASSPORT</Text>
+          <Text style={styles.passport}>CARE PASSPORT</Text>
           <View style={styles.photoPlaceholder}>
             <Text style={styles.photoMark}>◇</Text>
           </View>

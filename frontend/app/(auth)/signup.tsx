@@ -79,7 +79,7 @@ export default function Signup() {
           <Text style={styles.eyebrow}>CARE JOURNEY</Text>
           <Text style={styles.title}>새로운 케어 여정을 시작하세요</Text>
           <Text style={styles.desc}>
-            계정 정보를 입력하면 MCM Care 서비스를 이용할 수 있습니다.
+            계정 정보를 입력하면 Care Passport 서비스를 이용할 수 있습니다.
           </Text>
 
           <Text style={styles.label}>닉네임</Text>

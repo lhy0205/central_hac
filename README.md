@@ -1,6 +1,6 @@
-# MCM Care
+# Care Passport
 
-MCM Nomad Passport 프로젝트 소스코드 저장소입니다.
+Care Passport 프로젝트 소스코드 저장소입니다.
 
 ## 구성
 

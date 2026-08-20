@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "MCM Care",
+    "name": "Care Passport",
     "slug": "mcm-care-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#F6EFE1"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "newArchEnabled": false,
     "ios": {
       "supportsTablet": false,

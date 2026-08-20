@@ -100,7 +100,7 @@ export default function Notifications() {
   function showSettings(name: string) {
     Alert.alert(
       `${name} 권한 필요`,
-      "권한이 거절되어 있습니다. 휴대폰 설정에서 MCM Care 권한을 허용해주세요.",
+      "권한이 거절되어 있습니다. 휴대폰 설정에서 Care Passport 권한을 허용해주세요.",
       [{ text: "취소" }, { text: "설정 열기", onPress: Linking.openSettings }],
     );
   }
@@ -182,7 +182,7 @@ export default function Notifications() {
         </View>
         <Text style={styles.sectionTitle}>서비스 알림</Text>
         <Text style={styles.sectionDescription}>
-          MCM Care 서버에서 받을 알림 종류를 선택합니다.
+          Care Passport 서버에서 받을 알림 종류를 선택합니다.
         </Text>
         <View style={styles.group}>
           {[

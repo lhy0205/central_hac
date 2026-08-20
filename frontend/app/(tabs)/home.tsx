@@ -229,7 +229,7 @@ export default function Home() {
       <View style={[styles.top, { paddingTop: insets.top }]} pointerEvents="box-none">
         <View style={styles.header}>
           <Text style={styles.logo}>
-            MCM<Text style={styles.logoCare}>Care</Text>
+            Care<Text style={styles.logoSub}>Passport</Text>
           </Text>
           <Pressable
             accessibilityLabel="알림"
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   logo: { fontSize: 19, fontWeight: "800", color: "#fff", letterSpacing: -0.4 },
-  logoCare: { fontSize: 15, fontWeight: "400", color: "rgba(255,255,255,0.72)" },
+  logoSub: { fontSize: 15, fontWeight: "400", color: "rgba(255,255,255,0.72)" },
   bell: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   bellPressed: { backgroundColor: "rgba(255,255,255,0.2)" },
   bellBody: {

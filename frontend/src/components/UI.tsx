@@ -31,7 +31,7 @@ export function Header({
             onPress={() => router.replace("/(tabs)/home")}
           >
             <Text style={st.logo}>
-              MCM<Text style={st.care}>Care</Text>
+              Care<Text style={st.logoSub}>Passport</Text>
             </Text>
           </Pressable>
         )}
@@ -148,7 +148,7 @@ const st = StyleSheet.create({
     backgroundColor: "#fff",
   },
   logo: { fontSize: 22, fontWeight: "800" },
-  care: { fontSize: 12, fontWeight: "400" },
+  logoSub: { fontSize: 12, fontWeight: "400" },
   back: { fontSize: 30 },
   headTitle: {
     position: "absolute",
