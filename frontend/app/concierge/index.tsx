@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Dimensions,
   FlatList,
@@ -15,6 +15,7 @@ import Video from "react-native-video";
 
 import { BottomTabBar, useTabBarClearance } from "../../src/components/BottomTabBar";
 import { COLLECTIONS, type Collection } from "../../src/concierge/collections";
+import { addPending, listPending, removePending } from "../../src/concierge/wishlist";
 import { MOCK_PRODUCTS } from "../../src/register/catalog";
 import { colors } from "../../src/theme";
 
@@ -38,7 +39,13 @@ export default function Concierge() {
   const [query, setQuery] = useState(initialQuery ?? "");
   const [heroIndex, setHeroIndex] = useState(0);
   const [opened, setOpened] = useState<Collection | null>(null);
+  // 관심 등록은 기기에 남아 홈 "내 가방"에 예비 여권으로 선다. 화면에 들어올 때마다 맞춘다.
   const [liked, setLiked] = useState<string[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      void listPending().then((items) => setLiked(items.map((item) => item.id)));
+    }, []),
+  );
 
   const term = query.trim().toLowerCase();
   const results = useMemo(
@@ -54,10 +61,9 @@ export default function Concierge() {
 
   const hero = COLLECTIONS[Math.min(heroIndex, COLLECTIONS.length - 1)];
 
-  function toggleLike(name: string) {
-    setLiked((current) =>
-      current.includes(name) ? current.filter((x) => x !== name) : [...current, name],
-    );
+  async function toggleLike(id: string, modelName: string) {
+    const next = liked.includes(id) ? await removePending(id) : await addPending({ id, modelName });
+    setLiked(next.map((item) => item.id));
   }
 
   return (
@@ -132,11 +138,11 @@ export default function Concierge() {
                   </Text>
                 </View>
                 <Pressable
-                  onPress={() => toggleLike(item.name)}
-                  style={[styles.like, liked.includes(item.name) && styles.likeOn]}
+                  onPress={() => void toggleLike(item.id, item.name)}
+                  style={[styles.like, liked.includes(item.id) && styles.likeOn]}
                 >
-                  <Text style={[styles.likeText, liked.includes(item.name) && styles.likeTextOn]}>
-                    {liked.includes(item.name) ? "♥ 등록됨" : "♡ 관심"}
+                  <Text style={[styles.likeText, liked.includes(item.id) && styles.likeTextOn]}>
+                    {liked.includes(item.id) ? "♥ 등록됨" : "♡ 관심"}
                   </Text>
                 </Pressable>
               </View>
@@ -229,11 +235,11 @@ export default function Concierge() {
                 <Text style={styles.ghostText}>매장에서 보기</Text>
               </Pressable>
               <Pressable
-                onPress={() => toggleLike(opened.product)}
+                onPress={() => void toggleLike(opened.id, opened.product)}
                 style={({ pressed }) => [styles.gold, pressed && styles.pressed]}
               >
                 <Text style={styles.goldText}>
-                  {liked.includes(opened.product) ? "♥ 관심 등록됨" : "♡ 관심 등록"}
+                  {liked.includes(opened.id) ? "♥ 관심 등록됨" : "♡ 관심 등록"}
                 </Text>
               </Pressable>
             </View>

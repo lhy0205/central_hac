@@ -19,6 +19,7 @@ import Video from "react-native-video";
 
 import { ApiError, productApi, type PassportSummary } from "../../src/api/client";
 import { useTabBarClearance } from "../../src/components/BottomTabBar";
+import { listPending, type PendingPassport } from "../../src/concierge/wishlist";
 import { NotificationBubble } from "../../src/components/NotificationBubble";
 import { useChrome } from "../../src/context/ChromeContext";
 import { AD_SLIDES } from "../../src/home/adFeed";
@@ -50,6 +51,8 @@ export default function Home() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [cardIndex, setCardIndex] = useState(0);
   const [feedFocused, setFeedFocused] = useState(true);
+  // Concierge에서 관심 등록한 제품. 아직 산 게 아니라 서버 여권이 없으므로 기기에서 읽는다.
+  const [pending, setPending] = useState<PendingPassport[]>([]);
   const [bubbleOpen, setBubbleOpen] = useState(false);
   const hiddenRef = useRef(false);
 
@@ -77,6 +80,12 @@ export default function Home() {
     useCallback(() => {
       setFeedFocused(true);
       return () => setFeedFocused(false);
+    }, []),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      void listPending().then(setPending);
     }, []),
   );
 
@@ -130,7 +139,15 @@ export default function Home() {
     if (first?.index != null) setActiveSlide(first.index);
   }).current;
 
-  const cards = bags ?? [];
+  /* 카드 한 장이 세 종류다 — 실제 여권, 아직 안 산 예비 여권, 맨 끝의 제품 등록.
+     구별을 위해 종류를 붙여 한 배열로 만든다. */
+  type DockCard =
+    { kind: "bag"; bag: BagCard } | { kind: "pending"; item: PendingPassport } | { kind: "add" };
+  const cards: DockCard[] = [
+    ...(bags ?? []).map((bag) => ({ kind: "bag" as const, bag })),
+    ...pending.map((item) => ({ kind: "pending" as const, item })),
+  ];
+  const dockCards: DockCard[] = [...cards, { kind: "add" }];
 
   return (
     <View style={styles.screen}>
@@ -231,8 +248,14 @@ export default function Home() {
               </View>
             ) : (
               <FlatList
-                data={[...cards, null]}
-                keyExtractor={(item, index) => (item ? String(item.id) : `add-${index}`)}
+                data={dockCards}
+                keyExtractor={(item, index) =>
+                  item.kind === "bag"
+                    ? `bag-${item.bag.id}`
+                    : item.kind === "pending"
+                      ? `pending-${item.item.id}`
+                      : `add-${index}`
+                }
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
@@ -245,14 +268,20 @@ export default function Home() {
                   )
                 }
                 renderItem={({ item }) =>
-                  item ? <BagCardView bag={item} /> : <RegisterCardView />
+                  item.kind === "bag" ? (
+                    <BagCardView bag={item.bag} />
+                  ) : item.kind === "pending" ? (
+                    <PendingCardView item={item.item} />
+                  ) : (
+                    <RegisterCardView />
+                  )
                 }
               />
             )}
 
             {cards.length > 0 && (
               <View style={styles.dots}>
-                {[...cards, null].map((_, index) => (
+                {dockCards.map((_, index) => (
                   <View key={index} style={[styles.dot, index === cardIndex && styles.dotActive]} />
                 ))}
               </View>
@@ -321,6 +350,49 @@ function BagCardView({ bag }: { bag: BagCard }) {
           >
             <Text style={styles.diagLink}>최근 진단 결과 보기 ›</Text>
           </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/* 예비 여권 — Concierge에서 관심만 등록한 제품. 아직 실물이 없어 등급도 보유일수도 없다.
+   점선 테두리로 "아직 여권이 아니다"를 드러내고, 시리얼을 스캔하면 진짜 여권이 된다. */
+function PendingCardView({ item }: { item: PendingPassport }) {
+  return (
+    <View style={styles.cardWrap}>
+      <View style={[styles.card, styles.pendingCard]}>
+        <View style={[styles.thumb, styles.pendingThumb]}>
+          <Text style={styles.pendingMark}>◇</Text>
+        </View>
+        <View style={styles.info}>
+          <Text style={styles.pendingTag}>예비 여권</Text>
+          <Text numberOfLines={2} style={styles.bagName}>
+            {item.modelName}
+          </Text>
+          <Text style={styles.pendingNote}>관심 등록 · {formatDate(item.addedAt)}</Text>
+          <Text style={styles.pendingNote}>
+            구매 후 시리얼을 스캔하면 이 여권이 그대로 이어집니다
+          </Text>
+          <View style={styles.actions}>
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/register",
+                  params: { step: "scan", model: item.modelName, pending: item.id },
+                })
+              }
+              style={({ pressed }) => [styles.btn, styles.btnGold, pressed && styles.btnPressed]}
+            >
+              <Text style={styles.btnPrimaryText}>시리얼 스캔</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/care/booking")}
+              style={({ pressed }) => [styles.btn, styles.btnGhost, pressed && styles.btnPressed]}
+            >
+              <Text style={styles.btnGhostText}>매장 예약</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </View>
@@ -483,6 +555,31 @@ const styles = StyleSheet.create({
   btnGhost: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#CFCFCF" },
   btnGhostText: { color: "#222", fontSize: 12 },
   diagLink: { fontSize: 11, color: "#9A9A9A", textAlign: "right", paddingTop: 6 },
+
+  pendingCard: {
+    borderStyle: "dashed",
+    borderColor: "#C7BBA4",
+    backgroundColor: colors.stampPaper,
+  },
+  pendingThumb: { backgroundColor: "#F3EDE2", alignItems: "center", justifyContent: "center" },
+  pendingMark: { fontSize: 30, color: "#C4B69C" },
+  pendingTag: {
+    alignSelf: "flex-start",
+    fontSize: 9,
+    letterSpacing: 0.8,
+    fontWeight: "700",
+    color: colors.goldDeep,
+    borderWidth: 1,
+    borderColor: "#E4DCCD",
+    backgroundColor: "#FBF7F0",
+    borderRadius: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    overflow: "hidden",
+    marginBottom: 7,
+  },
+  pendingNote: { fontSize: 10.5, color: "#8A7B60", lineHeight: 16, marginTop: 2 },
+  btnGold: { backgroundColor: colors.goldDeep },
 
   addCard: {
     borderStyle: "dashed",

@@ -1,5 +1,5 @@
 ﻿import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { productApi, storeApi, transferApi, type StoreSummary } from "../../src/api/client";
 import { Calendar } from "../../src/components/Calendar";
+import { removePending } from "../../src/concierge/wishlist";
 import { PackingAnimation } from "../../src/components/PackingAnimation";
 import { PhotoPicker, validatePhotos, type PickedPhoto } from "../../src/components/PhotoPicker";
 import { Header } from "../../src/components/UI";
@@ -65,10 +66,18 @@ const PROGRESS: Partial<Record<Step, number>> = {
 
 export default function Register() {
   const insets = useSafeAreaInsets();
+  /* 홈의 예비 여권 카드에서 "시리얼 스캔"으로 들어오면 안내 시트와 선택 단계를 건너뛰고
+     바로 카메라를 띄운다. 이미 무엇을 살지 정한 사람에게 처음부터 다시 묻지 않는다.
+     model은 모델 선택 단계에 미리 채워지고, pending은 등록이 끝나면 지울 예비 여권이다. */
+  const {
+    step: entryStep,
+    model: entryModel,
+    pending: pendingId,
+  } = useLocalSearchParams<{ step?: string; model?: string; pending?: string }>();
   // 등록 화면엔 탭바가 없다. 시트·본문 하단이 내비게이션 바에 물리지 않게만 띄운다.
   const bottomPad = insets.bottom + 24;
-  const [step, setStep] = useState<Step>("choose");
-  const [intro, setIntro] = useState(true);
+  const [step, setStep] = useState<Step>(entryStep === "scan" ? "scan" : "choose");
+  const [intro, setIntro] = useState(entryStep !== "scan");
 
   // 승계
   const [code, setCode] = useState("");
@@ -81,7 +90,7 @@ export default function Register() {
   const [serialConfirm, setSerialConfirm] = useState("");
 
   // 등록 정보
-  const [modelName, setModelName] = useState("");
+  const [modelName, setModelName] = useState(entryModel ?? "");
   const [search, setSearch] = useState("");
   const [purchaseDate, setPurchaseDate] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -147,6 +156,7 @@ export default function Register() {
         receiptPhoto[0],
         shots,
       );
+      if (pendingId) await removePending(pendingId);
       setStep("done");
     } catch (error) {
       const message = String(error);
