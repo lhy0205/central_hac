@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Linking } from "react-native";
+import { View, Pressable, StyleSheet, ActivityIndicator, Linking } from "react-native";
+import { Text } from "../../components/BrandText";
 import {
   Camera,
   useCameraDevice,

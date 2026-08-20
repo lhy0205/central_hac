@@ -1,15 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, View } from "react-native";
+import { Text, TextInput } from "../../src/components/BrandText";
 import { AppButton, Header } from "../../src/components/UI";
 import { common, colors, gradeLabel } from "../../src/theme";
 import { useAndroidBack } from "../../src/hooks/useAndroidBack";

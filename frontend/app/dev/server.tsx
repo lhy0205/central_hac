@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../src/components/BrandText";
 import { AppButton, Field, Header } from "../../src/components/UI";
 import { clearOverrides, getCurrentAddresses, setOverrides } from "../../src/config/serverAddress";
 import { common, colors } from "../../src/theme";

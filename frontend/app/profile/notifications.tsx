@@ -12,9 +12,9 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
-  Text,
   View,
 } from "react-native";
+import { Text } from "../../src/components/BrandText";
 import { ApiError, accountApi } from "../../src/api/client";
 import { AppButton, Header } from "../../src/components/UI";
 import { colors, common } from "../../src/theme";

@@ -8,12 +8,12 @@ import {
   Image,
   Pressable,
   StyleSheet,
-  Text,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type ViewToken,
 } from "react-native";
+import { Text } from "../../src/components/BrandText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Video from "react-native-video";
 

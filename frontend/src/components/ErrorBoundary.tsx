@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "./BrandText";
 
 /* 렌더 중에 예외가 나면 React가 트리를 통째로 버린다. 릴리스 빌드에는 개발용 빨간 화면이
    없어서 사용자 눈에는 "앱이 그냥 꺼졌다"로 보이고, 로그를 못 뽑으면 원인도 남지 않는다.

@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { StyleSheet, View, type ViewStyle } from "react-native";
+import { Text } from "./BrandText";
 import Video from "react-native-video";
 
 import { colors } from "../theme";

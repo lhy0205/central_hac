@@ -1,14 +1,7 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../src/components/BrandText";
 import { AppButton, Header } from "../../src/components/UI";
 import { productApi, ApiError, type PassportSummary } from "../../src/api/client";
 import { colors, common, gradeLabel } from "../../src/theme";

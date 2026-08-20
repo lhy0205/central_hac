@@ -4,11 +4,11 @@ import {
   PanResponder,
   useWindowDimensions,
   View,
-  Text,
   Pressable,
   StyleSheet,
   ScrollView,
 } from "react-native";
+import { Text } from "../../components/BrandText";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import Video, { ViewType } from "react-native-video";
@@ -60,9 +60,7 @@ export default function ARResultScreen({
   // 탐지 자체가 실패하면 영상 없이 안내 문구만 보여준다.
   const story = primary != null ? getStory(primary.class) : null;
   const videoSource =
-    primary != null
-      ? getStoryVideo(primary.class, topCandidate?.productId ?? primary.class)
-      : null;
+    primary != null ? getStoryVideo(primary.class, topCandidate?.productId ?? primary.class) : null;
 
   // PanResponder 콜백 클로저는 최초 렌더 때 고정되므로 COLLAPSED_Y를 직접 담으면
   // 인셋 갱신이 늦은 기기에서 stale 값을 쓴다. ref로 우회.
@@ -173,9 +171,7 @@ export default function ARResultScreen({
         </Pressable>
       </SafeAreaView>
 
-      <Animated.View
-        style={[styles.sheet, { height: SHEET_HEIGHT, transform: [{ translateY }] }]}
-      >
+      <Animated.View style={[styles.sheet, { height: SHEET_HEIGHT, transform: [{ translateY }] }]}>
         <Animated.View
           style={[styles.sheetBackdrop, { opacity: sheetBackdropOpacity }]}
           pointerEvents="none"

@@ -8,10 +8,10 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from "react-native";
+import { Text } from "../../src/components/BrandText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {

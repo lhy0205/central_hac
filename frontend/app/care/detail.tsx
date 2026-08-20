@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, View } from "react-native";
+import { Text } from "../../src/components/BrandText";
 import { careRecordApi, type CareRecordDetail } from "../../src/api/client";
 import { AppButton, Header } from "../../src/components/UI";
 import { colors, common } from "../../src/theme";

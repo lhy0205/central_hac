@@ -1,6 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, View } from "react-native";
+import { Text, TextInput } from "../../src/components/BrandText";
 import { AppButton, Header } from "../../src/components/UI";
 import { journeyApi, type TimelineEventDetail } from "../../src/api/client";
 import { common, colors } from "../../src/theme";

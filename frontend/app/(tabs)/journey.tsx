@@ -7,9 +7,9 @@ import {
   Image,
   Pressable,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
+import { Text } from "../../src/components/BrandText";
 
 import { ApiError, productApi, type PassportSummary } from "../../src/api/client";
 import { useTabBarClearance } from "../../src/components/BottomTabBar";

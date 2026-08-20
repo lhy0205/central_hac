@@ -1,14 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "../../src/components/BrandText";
 import { AppButton, Header } from "../../src/components/UI";
 import { BottomTabBar, useTabBarClearance } from "../../src/components/BottomTabBar";
 import {

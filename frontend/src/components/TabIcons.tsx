@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Text } from "./BrandText";
 import Svg, { Circle, G, Path } from "react-native-svg";
 
 // (tabs)/_layout.tsx의 실제 탭바와 BottomTabBar(탭 네비게이터 밖 화면용 대체 탭바)가

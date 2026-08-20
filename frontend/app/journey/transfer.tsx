@@ -1,6 +1,7 @@
 ﻿import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "../../src/components/BrandText";
 
 import { diagnosisApi, productApi, transferApi, type PassportDetail } from "../../src/api/client";
 import { BottomTabBar, useTabBarClearance } from "../../src/components/BottomTabBar";

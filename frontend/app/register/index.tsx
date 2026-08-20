@@ -9,10 +9,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
+import { Text, TextInput } from "../../src/components/BrandText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { productApi, storeApi, transferApi, type StoreSummary } from "../../src/api/client";

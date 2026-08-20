@@ -1,17 +1,8 @@
 ﻿import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import {
-  Alert,
-  Image,
-  Linking,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../../src/components/BrandText";
 
 import { ApiError, journeyApi } from "../../src/api/client";
 import { validatePhotos, type PickedPhoto } from "../../src/components/PhotoPicker";

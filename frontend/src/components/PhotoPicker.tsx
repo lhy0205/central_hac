@@ -1,6 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
-import { Alert, Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Linking, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "./BrandText";
 import { colors } from "../theme";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;

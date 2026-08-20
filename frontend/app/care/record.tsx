@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, Text } from "react-native";
+import { Alert, ScrollView } from "react-native";
+import { Text } from "../../src/components/BrandText";
 import { ApiError, careRecordApi } from "../../src/api/client";
 import { AppButton, Field, Header } from "../../src/components/UI";
 import { PhotoPicker, validatePhotos, type PickedPhoto } from "../../src/components/PhotoPicker";

@@ -7,9 +7,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
+import { Text } from "../../src/components/BrandText";
 
 import { reservationApi, storeApi, type StoreSummary } from "../../src/api/client";
 import { BottomTabBar, useTabBarClearance } from "../../src/components/BottomTabBar";

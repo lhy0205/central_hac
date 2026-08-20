@@ -1,14 +1,6 @@
 import { useState } from "react";
-import {
-  Alert,
-  Linking,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../../src/components/BrandText";
 import { AppButton, Field, Header } from "../../src/components/UI";
 import { colors, common } from "../../src/theme";
 type Page = "menu" | "faq" | "centers" | "hours" | "inquiry";

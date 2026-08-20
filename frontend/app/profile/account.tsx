@@ -1,15 +1,7 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "../../src/components/BrandText";
 
 import { accountApi, ApiError, authApi, type AccountInfo } from "../../src/api/client";
 import { Header } from "../../src/components/UI";

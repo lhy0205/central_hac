@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import React from "react";
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Pressable, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "./BrandText";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, common } from "../theme";

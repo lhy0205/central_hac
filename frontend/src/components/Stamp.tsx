@@ -80,7 +80,7 @@ export function Stamp({
         </Defs>
         <Circle cx="47" cy="47" r="44" fill="none" stroke={ink} strokeWidth={1.7} />
         <Circle cx="47" cy="47" r="38.5" fill="none" stroke={ink} strokeWidth={1} />
-        <SvgText fontSize="9.4" fill={ink} fontWeight="500">
+        <SvgText fontSize="9.4" fill={ink} fontFamily="GmarketSansMedium">
           <TextPath href={`#${arcId}`} startOffset="50%" textAnchor="middle">
             {glyph.en}
           </TextPath>
@@ -88,7 +88,14 @@ export function Stamp({
         <G fill="none" stroke={ink} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
           <Path d={glyph.path} />
         </G>
-        <SvgText x="47" y="79.5" textAnchor="middle" fontSize="9.6" fill={ink}>
+        <SvgText
+          x="47"
+          y="79.5"
+          textAnchor="middle"
+          fontSize="9.6"
+          fill={ink}
+          fontFamily="GmarketSansMedium"
+        >
           {type}
         </SvgText>
       </Svg>

@@ -53,7 +53,11 @@ export async function recognizeSerial(photo: {
 }): Promise<OcrResult> {
   const OCR_API_URL = await getOcrApiBaseUrl();
   if (!OCR_API_URL) {
-    throw new ApiError("OCR_API_BASE_URL_NOT_CONFIGURED", "OCR 서버 주소가 설정되지 않았습니다.", 0);
+    throw new ApiError(
+      "OCR_API_BASE_URL_NOT_CONFIGURED",
+      "OCR 서버 주소가 설정되지 않았습니다.",
+      0,
+    );
   }
 
   const resizedUri = await shrinkForOcr(photo.uri);
@@ -86,7 +90,11 @@ export async function recognizeSerial(photo: {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new ApiError(`HTTP_${response.status}`, text || "일련번호 인식에 실패했습니다.", response.status);
+    throw new ApiError(
+      `HTTP_${response.status}`,
+      text || "일련번호 인식에 실패했습니다.",
+      response.status,
+    );
   }
 
   const json = await response.json();

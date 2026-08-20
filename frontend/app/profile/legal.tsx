@@ -1,4 +1,5 @@
-import { ScrollView, Text } from "react-native";
+import { ScrollView } from "react-native";
+import { Text } from "../../src/components/BrandText";
 import { Header } from "../../src/components/UI";
 import { common } from "../../src/theme";
 export default function Legal() {

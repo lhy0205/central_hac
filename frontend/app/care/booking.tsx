@@ -8,9 +8,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
+import { Text } from "../../src/components/BrandText";
 
 import {
   ApiError,
