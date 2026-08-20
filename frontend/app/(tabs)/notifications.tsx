@@ -16,13 +16,16 @@ import {
   type CareNotification,
   type NotificationType,
 } from "../../src/api/client";
+import { ReasonChips } from "../../src/components/ReasonChips";
 import { Header } from "../../src/components/UI";
 import { colors } from "../../src/theme";
-const META: Record<NotificationType, { label: string; detail: string }> = {
-  SELF_CARE: { label: "케어", detail: "가방 상태에 맞는 셀프 케어를 확인해보세요." },
-  STORE_SERVICE: { label: "진단", detail: "공식 케어 점검을 권장합니다." },
-  REPURCHASE: { label: "교체", detail: "제품 상태를 다시 확인해주세요." },
-  MILESTONE: { label: "기념", detail: "여권에 새로운 스탬프가 추가되었습니다." },
+// 고정 설명문은 뺐다 — 타입이 같으면 누구에게나 같은 문장이라 "왜 지금"의 답이 못 된다.
+// 그 자리는 서버가 알림마다 내려주는 실제 판단 근거(reasonFactors)가 대신한다.
+const META: Record<NotificationType, { label: string }> = {
+  SELF_CARE: { label: "케어" },
+  STORE_SERVICE: { label: "진단" },
+  REPURCHASE: { label: "교체" },
+  MILESTONE: { label: "기념" },
 };
 function dateText(value: string) {
   return value.slice(0, 10).replaceAll("-", ". ");
@@ -140,8 +143,11 @@ export default function Notifications() {
                       </View>
                       <Text style={styles.date}>{dateText(item.createdAt)}</Text>
                     </View>
-                    <Text style={styles.message}>{item.message}</Text>
-                    <Text style={styles.sub}>{meta.detail}</Text>
+                    <Text style={styles.message}>
+                      {item.message}
+                      {item.overallScore != null ? ` · 종합 ${item.overallScore}점` : ""}
+                    </Text>
+                    <ReasonChips factors={item.reasonFactors} />
                     <Text style={styles.hint}>길게 눌러 삭제</Text>
                   </View>
                 </Pressable>

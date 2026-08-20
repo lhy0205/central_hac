@@ -9,7 +9,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -191,21 +190,25 @@ export default function Home() {
             <View style={styles.bellClapper} />
           </Pressable>
         </View>
+        {/* 검색바는 여태 value도 onChangeText도 없는 껍데기였다. 누르면 Concierge로 보낸다 —
+            거기서 검색어가 비면 컬렉션 이야기를, 입력하면 제품 결과를 보여준다. 여기서 바로
+            타이핑을 받지 않는 이유는, 홈 배경이 세로 페이징이라 키보드가 올라오면 레이아웃이
+            흔들리기 때문이다. */}
         <View style={styles.searchWrap}>
-          <View style={styles.searchBar}>
+          <Pressable
+            accessibilityLabel="제품 검색"
+            accessibilityRole="search"
+            onPress={() => router.push("/concierge")}
+            style={({ pressed }) => [styles.searchBar, pressed && styles.searchPressed]}
+          >
             <View style={styles.searchLens} />
             <View style={styles.searchHandle} />
-            <TextInput
-              accessibilityLabel="제품 검색"
-              placeholder="Search"
-              placeholderTextColor="#8B8B8B"
-              style={styles.searchInput}
-            />
+            <Text style={styles.searchPlaceholder}>무엇을 찾으세요?</Text>
             <View style={styles.mic}>
               <View style={styles.micHead} />
               <View style={styles.micArc} />
             </View>
-          </View>
+          </Pressable>
         </View>
       </View>
 
@@ -418,7 +421,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#6E6E6E",
     transform: [{ rotate: "45deg" }],
   },
-  searchInput: { flex: 1, fontSize: 15, color: "#222", padding: 0 },
+  searchPlaceholder: { flex: 1, fontSize: 15, color: "#8B8B8B" },
+  searchPressed: { backgroundColor: "rgba(255,255,255,0.78)" },
   // 마이크: 캡슐 머리 + 아래를 감싸는 반원. 캡슐만 두면 숫자 0처럼 보인다.
   mic: { width: 14, height: 18, alignItems: "center", justifyContent: "flex-start" },
   micHead: { width: 7, height: 10, borderRadius: 3.5, backgroundColor: "#6E6E6E" },

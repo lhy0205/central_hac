@@ -17,16 +17,17 @@ import {
   type CareNotification,
   type NotificationType,
 } from "../api/client";
+import { ReasonChips } from "./ReasonChips";
 import { colors } from "../theme";
 
 /* 홈 헤더의 알림 아이콘을 누르면 벨 아래에서 말풍선으로 내려온다.
-   내용은 기존 (tabs)/notifications.tsx와 같은 값을 쓴다 — 타입 라벨/설명은 META,
-   본문은 백엔드가 만들어 내려주는 message, 날짜는 createdAt. */
-const META: Record<NotificationType, { label: string; detail: string }> = {
-  SELF_CARE: { label: "케어", detail: "가방 상태에 맞는 셀프 케어를 확인해보세요." },
-  STORE_SERVICE: { label: "진단", detail: "공식 케어 점검을 권장합니다." },
-  REPURCHASE: { label: "교체", detail: "제품 상태를 다시 확인해주세요." },
-  MILESTONE: { label: "기념", detail: "여권에 새로운 스탬프가 추가되었습니다." },
+   내용은 기존 (tabs)/notifications.tsx와 같은 값을 쓴다 — 타입 라벨은 META, 본문은
+   백엔드가 만들어 내려주는 message, 판단 근거는 reasonFactors, 날짜는 createdAt. */
+const META: Record<NotificationType, { label: string }> = {
+  SELF_CARE: { label: "케어" },
+  STORE_SERVICE: { label: "진단" },
+  REPURCHASE: { label: "교체" },
+  MILESTONE: { label: "기념" },
 };
 
 type Row = CareNotification & { serialNumber: string | null };
@@ -185,7 +186,7 @@ export function NotificationBubble({
                       {item.overallScore != null ? ` · 종합 ${item.overallScore}점` : ""}
                     </Text>
                     {item.serialNumber ? <Text style={styles.sub}>{item.serialNumber}</Text> : null}
-                    <Text style={styles.sub}>{meta.detail}</Text>
+                    <ReasonChips factors={item.reasonFactors} />
                   </View>
                 </Pressable>
               );
