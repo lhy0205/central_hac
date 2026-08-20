@@ -387,10 +387,15 @@ function PendingCardView({ item }: { item: PendingPassport }) {
               <Text style={styles.btnPrimaryText}>시리얼 스캔</Text>
             </Pressable>
             <Pressable
-              onPress={() => router.push("/care/booking")}
+              onPress={() =>
+                router.push({
+                  pathname: "/concierge/visit",
+                  params: { model: item.modelName },
+                })
+              }
               style={({ pressed }) => [styles.btn, styles.btnGhost, pressed && styles.btnPressed]}
             >
-              <Text style={styles.btnGhostText}>매장 예약</Text>
+              <Text style={styles.btnGhostText}>매장 방문</Text>
             </Pressable>
           </View>
         </View>
