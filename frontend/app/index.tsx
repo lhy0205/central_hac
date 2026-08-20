@@ -39,7 +39,8 @@ export default function Index() {
       <StatusBar style="light" />
       <BrandBackdrop />
       <BrandMark style={styles.mark} />
-      <View style={[styles.bottom, { bottom: insets.bottom + 32 }]}>
+      {/* 문구와 로딩 바가 화면 바닥에 붙어 고개를 숙여야 읽혔다. 안전영역 위로 더 띄운다. */}
+      <View style={[styles.bottom, { bottom: insets.bottom + 96 }]}>
         <Text style={styles.copy}>2026 가을 컬렉션{"\n"}지금 만나보세요</Text>
         <View style={styles.track}>
           <Animated.View style={[styles.fill, { width }]} />
@@ -54,8 +55,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#150E06" },
   mark: { position: "absolute", left: 0, right: 0, top: "11%" },
   bottom: { position: "absolute", left: 26, right: 26 },
-  copy: { fontSize: 16, lineHeight: 25, color: "#F0E7D6", fontWeight: "500", marginBottom: 20 },
+  copy: { fontSize: 19, lineHeight: 29, color: "#F0E7D6", fontWeight: "500", marginBottom: 22 },
   track: { height: 1, backgroundColor: "rgba(226,203,150,0.22)", marginBottom: 13 },
   fill: { height: 1, backgroundColor: "#C9A668" },
-  loading: { fontSize: 8.5, letterSpacing: 2.6, color: "rgba(226,203,150,0.6)" },
+  loading: { fontSize: 10, letterSpacing: 2.8, color: "rgba(226,203,150,0.62)" },
 });
