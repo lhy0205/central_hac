@@ -44,7 +44,7 @@ export default function CareRecord() {
           careType: careType.trim(),
           materialType: materialType.trim() || undefined,
           notes: notes.trim() || undefined,
-          completedAt: date.toISOString(),
+          completedAt: `${completedAt}:00`,
         },
         photos[0],
       );

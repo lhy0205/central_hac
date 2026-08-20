@@ -104,7 +104,7 @@ public class TimelineService {
         reservations.forEach(r -> {
             String storeName = storeNames.getOrDefault(r.getStoreId(), "");
             items.add(new TimelineItem(
-                "RESERVATION", r.getId(), r.getSlotDateTime(),
+                "RESERVATION", r.getId(), r.getCreatedAt(),
                 Map.of(
                     "storeName", storeName,
                     "requestItems", r.getRequestItems(),
