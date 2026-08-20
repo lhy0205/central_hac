@@ -41,7 +41,7 @@ const DETAIL_ROUTE: Record<string, string> = {
 /* 스탬프가 클수록 한 화면에 두 개도 안 들어와, 스크롤 끝에서 늘 반쯤 잘린 도장이 보인다.
    지도로 읽히려면 여러 개가 한눈에 들어와야 한다. */
 const STAMP_SIZE = 60;
-const NODE_GAP = 92;
+const NODE_GAP = 84;
 const MAP_TOP = 34;
 
 /* 스탬프를 좌우로 굽이치는 길 위에 놓는다. sin 곡선이라 개수가 늘어도 규칙이 유지된다.
@@ -59,7 +59,7 @@ export default function Passport() {
   const insets = useSafeAreaInsets();
   const bottomPad = useTabBarClearance(20);
   // 아래 버튼 줄은 탭바 바로 위에 앉힌다. 상세 화면의 여백(bottomPad)과 달리 넉넉할 이유가 없다.
-  const actionsPad = useTabBarClearance(8);
+  const actionsPad = useTabBarClearance(4);
   const [passport, setPassport] = useState<PassportDetail | null>(null);
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [grade, setGrade] = useState<string | null>(null);
@@ -439,21 +439,21 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   errorText: { fontSize: 13, color: "#666" },
   content: { padding: 20 },
-  fixedTop: { paddingHorizontal: 20, paddingTop: 20 },
+  fixedTop: { paddingHorizontal: 20, paddingTop: 12 },
   mapScroll: { flex: 1 },
   mapScrollContent: { paddingHorizontal: 20 },
   mapActions: {
     flexDirection: "row",
     gap: 10,
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 8,
     backgroundColor: "#fff",
   },
 
   heroRow: { flexDirection: "row", gap: 14, alignItems: "center" },
   hero: {
-    width: 104,
-    height: 104,
+    width: 84,
+    height: 84,
     borderWidth: 1,
     borderStyle: "dashed",
     borderColor: "#D4D0C9",
@@ -477,8 +477,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   meta: { fontSize: 11.5, color: "#9A9A9A", marginBottom: 3 },
-  rule: { height: 1, backgroundColor: "#E6E1D8", marginVertical: 12 },
-  days: { fontSize: 13, color: "#2A2A2A", marginBottom: 6 },
+  rule: { height: 1, backgroundColor: "#E6E1D8", marginVertical: 9 },
+  days: { fontSize: 13, color: "#2A2A2A", marginBottom: 2 },
   diamond: { color: colors.gold, fontSize: 9 },
 
   mapWrap: { alignItems: "center", marginTop: 10 },
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", gap: 10, marginTop: 26 },
   outline: {
     flex: 1,
-    height: 48,
+    height: 44,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#D5D5D5",
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   outlineText: { fontSize: 14, color: "#222" },
   filled: {
     flex: 1,
-    height: 48,
+    height: 44,
     borderRadius: 8,
     backgroundColor: "#2B2B2B",
     alignItems: "center",
