@@ -220,7 +220,7 @@ export default function Home() {
           >
             <View style={styles.searchLens} />
             <View style={styles.searchHandle} />
-            <Text style={styles.searchPlaceholder}>무엇을 찾으세요?</Text>
+            <Text style={styles.searchPlaceholder}>제품 검색 & Concierge</Text>
             <View style={styles.mic}>
               <View style={styles.micHead} />
               <View style={styles.micArc} />

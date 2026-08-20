@@ -16,6 +16,7 @@ import {
   type CareNotification,
   type NotificationType,
 } from "../../src/api/client";
+import { useTabBarClearance } from "../../src/components/BottomTabBar";
 import { ReasonChips } from "../../src/components/ReasonChips";
 import { Header } from "../../src/components/UI";
 import { colors } from "../../src/theme";
@@ -31,6 +32,7 @@ function dateText(value: string) {
   return value.slice(0, 10).replaceAll("-", ". ");
 }
 export default function Notifications() {
+  const bottomPad = useTabBarClearance(20);
   const [items, setItems] = useState<CareNotification[]>([]);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [loading, setLoading] = useState(true);
@@ -117,7 +119,7 @@ export default function Notifications() {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: bottomPad }]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
         >
           {visible.length === 0 ? (
@@ -174,7 +176,7 @@ const styles = StyleSheet.create({
   filterText: { fontSize: 11, color: "#929292" },
   filterTextOn: { fontSize: 11, color: "#fff" },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  list: { paddingHorizontal: 20, paddingBottom: 30 },
+  list: { paddingHorizontal: 20 },
   row: {
     minHeight: 105,
     flexDirection: "row",

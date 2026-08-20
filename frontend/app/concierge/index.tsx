@@ -1,9 +1,12 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
+  Animated,
   Dimensions,
+  Easing,
   FlatList,
   Image,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -64,6 +67,48 @@ export default function Concierge() {
   // 이야기 상세가 열려 있으면 그쪽 영상이 배경이 된다. 붙는 Video는 언제나 한 개다.
   const background = opened ?? activeCollection;
 
+  /* 이야기 상세는 오른쪽으로 밀면 닫힌다. ✕만 있으면 읽던 자리에서 손을 크게 옮겨야 하고,
+     돌아가는 순간이 뚝 끊겨 보인다. 미는 만큼 따라 움직이다가 놓으면 마저 빠져나간다.
+     화면 가장자리에서 시작할 필요가 없게 둔 이유는, 안드로이드가 양쪽 가장자리 스와이프를
+     시스템 뒤로가기로 먼저 가져가기 때문이다. */
+  const dragX = useRef(new Animated.Value(SCREEN_W)).current;
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        gesture.dx > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.4,
+      onPanResponderMove: (_, gesture) => {
+        if (gesture.dx > 0) dragX.setValue(gesture.dx);
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dx > 90 || gesture.vx > 0.5) closeDetail();
+        else Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(dragX, { toValue: 0, useNativeDriver: true }).start();
+      },
+    }),
+  ).current;
+
+  function openDetail(item: Collection) {
+    dragX.setValue(SCREEN_W);
+    setOpened(item);
+    Animated.timing(dragX, {
+      toValue: 0,
+      duration: 240,
+      easing: Easing.bezier(0.2, 0.9, 0.3, 1),
+      useNativeDriver: true,
+    }).start();
+  }
+
+  function closeDetail() {
+    Animated.timing(dragX, {
+      toValue: SCREEN_W,
+      duration: 200,
+      easing: Easing.bezier(0.4, 0, 1, 1),
+      useNativeDriver: true,
+    }).start(() => setOpened(null));
+  }
+
   async function toggleLike(id: string, modelName: string) {
     const next = liked.includes(id) ? await removePending(id) : await addPending({ id, modelName });
     setLiked(next.map((item) => item.id));
@@ -80,11 +125,132 @@ export default function Concierge() {
       />
       <View style={styles.scrim} pointerEvents="none" />
 
+      <View style={styles.layer}>
+        <View style={[styles.topRow, { paddingTop: insets.top + 6 }]}>
+          <Pressable accessibilityLabel="뒤로가기" hitSlop={12} onPress={() => router.back()}>
+            <Text style={styles.back}>‹</Text>
+          </Pressable>
+          <Text style={styles.topTag}>CONCIERGE</Text>
+        </View>
+
+        <View style={styles.searchWrap}>
+          <View style={styles.searchBar}>
+            <View style={styles.lens} />
+            <View style={styles.lensHandle} />
+            <TextInput
+              accessibilityLabel="제품 검색"
+              autoCorrect={false}
+              onChangeText={setQuery}
+              placeholder="무엇을 찾으세요?"
+              placeholderTextColor="#8B8B8B"
+              style={styles.searchInput}
+              value={query}
+            />
+            {query.length > 0 ? (
+              <Pressable hitSlop={10} onPress={() => setQuery("")}>
+                <Text style={styles.clear}>✕</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+
+        {term ? (
+          <ScrollView
+            contentContainerStyle={[styles.results, { paddingBottom: bottomPad }]}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.resultHead}>검색 결과 {results.length}건</Text>
+            {results.length === 0 ? (
+              <View style={styles.empty}>
+                <Text style={styles.emptyText}>찾는 제품이 없습니다.</Text>
+                <Text style={styles.emptySub}>검색어를 지우면 컬렉션 이야기로 돌아갑니다.</Text>
+              </View>
+            ) : (
+              results.map((item) => (
+                <View key={item.id} style={styles.resultRow}>
+                  <Image source={bagImage} style={styles.resultThumb} />
+                  <View style={styles.resultBody}>
+                    <Text numberOfLines={1} style={styles.resultName}>
+                      {item.name}
+                    </Text>
+                    <Text style={styles.resultMeta}>
+                      {item.color} · {item.price.toLocaleString()}원
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => void toggleLike(item.id, item.name)}
+                    style={[styles.like, liked.includes(item.id) && styles.likeOn]}
+                  >
+                    <Text style={[styles.likeText, liked.includes(item.id) && styles.likeTextOn]}>
+                      {liked.includes(item.id) ? "♥ 등록됨" : "♡ 관심"}
+                    </Text>
+                  </Pressable>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        ) : (
+          <>
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionTitle}>컬렉션 이야기</Text>
+              <View style={styles.dots}>
+                {COLLECTIONS.map((item, i) => (
+                  <View key={item.id} style={[styles.dot, i === index && styles.dotOn]} />
+                ))}
+              </View>
+            </View>
+
+            {/* 한 번에 한 장. 페이지 폭이 화면 폭이라 pagingEnabled가 그대로 맞는다.
+                  카드 아래는 탭바가 차지하는 만큼만 비워, 카드 끝이 아이콘 바로 위에 닿는다. */}
+            <FlatList
+              data={COLLECTIONS}
+              keyExtractor={(item) => item.id}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={onPage}
+              scrollEventThrottle={16}
+              style={styles.rail}
+              renderItem={({ item }) => (
+                <View style={[styles.page, { paddingBottom: bottomPad }]}>
+                  <Pressable
+                    onPress={() => openDetail(item)}
+                    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+                  >
+                    <View style={styles.cardMedia}>
+                      <Image source={bagImage} style={styles.cardImage} />
+                    </View>
+                    <Text style={styles.cardKicker}>{item.kicker}</Text>
+                    <Text numberOfLines={1} style={styles.cardTitle}>
+                      {item.title}
+                    </Text>
+                    <Text style={styles.cardCaption}>{item.caption}</Text>
+                    <Text style={styles.cardStory}>{item.story}</Text>
+                    <View style={styles.cardFacts}>
+                      {item.facts.map((fact) => (
+                        <Text key={fact} style={styles.cardFact}>
+                          {fact}
+                        </Text>
+                      ))}
+                    </View>
+                    <Text style={styles.cardMore}>이야기 보기 ›</Text>
+                  </Pressable>
+                </View>
+              )}
+            />
+          </>
+        )}
+      </View>
+
+      {/* 이야기 상세. 새 라우트를 만들지 않고 목록 위에 덮는다. 오른쪽으로 밀면 미는 만큼
+          따라 빠져나가면서 아래 목록이 그대로 드러난다 — 돌아가는 순간이 끊기지 않는다. */}
       {opened ? (
-        /* 이야기 상세. 새 라우트를 만들지 않고 같은 배경 위에 내용만 바꿔 덮는다. */
-        <View style={styles.layer}>
+        <Animated.View
+          style={[styles.detailLayer, { transform: [{ translateX: dragX }] }]}
+          {...pan.panHandlers}
+        >
           <View style={[styles.topRow, { paddingTop: insets.top + 6 }]}>
-            <Pressable accessibilityLabel="닫기" hitSlop={12} onPress={() => setOpened(null)}>
+            <Pressable accessibilityLabel="닫기" hitSlop={12} onPress={closeDetail}>
               <Text style={styles.back}>✕</Text>
             </Pressable>
             <Text style={styles.topTag}>{opened.kicker}</Text>
@@ -122,125 +288,8 @@ export default function Concierge() {
               </Pressable>
             </View>
           </View>
-        </View>
-      ) : (
-        <View style={styles.layer}>
-          <View style={[styles.topRow, { paddingTop: insets.top + 6 }]}>
-            <Pressable accessibilityLabel="뒤로가기" hitSlop={12} onPress={() => router.back()}>
-              <Text style={styles.back}>‹</Text>
-            </Pressable>
-            <Text style={styles.topTag}>CONCIERGE</Text>
-          </View>
-
-          <View style={styles.searchWrap}>
-            <View style={styles.searchBar}>
-              <View style={styles.lens} />
-              <View style={styles.lensHandle} />
-              <TextInput
-                accessibilityLabel="제품 검색"
-                autoCorrect={false}
-                onChangeText={setQuery}
-                placeholder="무엇을 찾으세요?"
-                placeholderTextColor="#8B8B8B"
-                style={styles.searchInput}
-                value={query}
-              />
-              {query.length > 0 ? (
-                <Pressable hitSlop={10} onPress={() => setQuery("")}>
-                  <Text style={styles.clear}>✕</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          </View>
-
-          {term ? (
-            <ScrollView
-              contentContainerStyle={[styles.results, { paddingBottom: bottomPad }]}
-              keyboardShouldPersistTaps="handled"
-            >
-              <Text style={styles.resultHead}>검색 결과 {results.length}건</Text>
-              {results.length === 0 ? (
-                <View style={styles.empty}>
-                  <Text style={styles.emptyText}>찾는 제품이 없습니다.</Text>
-                  <Text style={styles.emptySub}>검색어를 지우면 컬렉션 이야기로 돌아갑니다.</Text>
-                </View>
-              ) : (
-                results.map((item) => (
-                  <View key={item.id} style={styles.resultRow}>
-                    <Image source={bagImage} style={styles.resultThumb} />
-                    <View style={styles.resultBody}>
-                      <Text numberOfLines={1} style={styles.resultName}>
-                        {item.name}
-                      </Text>
-                      <Text style={styles.resultMeta}>
-                        {item.color} · {item.price.toLocaleString()}원
-                      </Text>
-                    </View>
-                    <Pressable
-                      onPress={() => void toggleLike(item.id, item.name)}
-                      style={[styles.like, liked.includes(item.id) && styles.likeOn]}
-                    >
-                      <Text style={[styles.likeText, liked.includes(item.id) && styles.likeTextOn]}>
-                        {liked.includes(item.id) ? "♥ 등록됨" : "♡ 관심"}
-                      </Text>
-                    </Pressable>
-                  </View>
-                ))
-              )}
-            </ScrollView>
-          ) : (
-            <>
-              <View style={styles.sectionRow}>
-                <Text style={styles.sectionTitle}>컬렉션 이야기</Text>
-                <View style={styles.dots}>
-                  {COLLECTIONS.map((item, i) => (
-                    <View key={item.id} style={[styles.dot, i === index && styles.dotOn]} />
-                  ))}
-                </View>
-              </View>
-
-              {/* 한 번에 한 장. 페이지 폭이 화면 폭이라 pagingEnabled가 그대로 맞는다.
-                  카드 아래는 탭바가 차지하는 만큼만 비워, 카드 끝이 아이콘 바로 위에 닿는다. */}
-              <FlatList
-                data={COLLECTIONS}
-                keyExtractor={(item) => item.id}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onScroll={onPage}
-                scrollEventThrottle={16}
-                style={styles.rail}
-                renderItem={({ item }) => (
-                  <View style={[styles.page, { paddingBottom: bottomPad }]}>
-                    <Pressable
-                      onPress={() => setOpened(item)}
-                      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-                    >
-                      <View style={styles.cardMedia}>
-                        <Image source={bagImage} style={styles.cardImage} />
-                      </View>
-                      <Text style={styles.cardKicker}>{item.kicker}</Text>
-                      <Text numberOfLines={1} style={styles.cardTitle}>
-                        {item.title}
-                      </Text>
-                      <Text style={styles.cardCaption}>{item.caption}</Text>
-                      <Text style={styles.cardStory}>{item.story}</Text>
-                      <View style={styles.cardFacts}>
-                        {item.facts.map((fact) => (
-                          <Text key={fact} style={styles.cardFact}>
-                            {fact}
-                          </Text>
-                        ))}
-                      </View>
-                      <Text style={styles.cardMore}>이야기 보기 ›</Text>
-                    </Pressable>
-                  </View>
-                )}
-              />
-            </>
-          )}
-        </View>
-      )}
+        </Animated.View>
+      ) : null}
 
       <BottomTabBar active="home" />
     </View>
@@ -251,6 +300,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.night },
   scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(12,8,4,0.42)" },
   layer: { flex: 1 },
+  /* 목록 위에 덮이므로 자기 베일을 갖는다. 투명하면 미는 동안 두 화면이 겹쳐 보인다. */
+  detailLayer: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(12,8,4,0.62)" },
 
   topRow: {
     flexDirection: "row",
